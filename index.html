@@ -82,20 +82,11 @@ body,html{
 .spacer{
     height:140px;
 }
-
-/* upcoming bosses */
-
-.upcoming{
-    margin-top:20px;
-    font-size:18px;
-    color:#bbb;
-}
-
 /* slider */
 
 .slider-container{
     position:fixed;
-    bottom:20px;
+    top: 20px;
     width:300px;
     text-align:center;
 }
@@ -109,31 +100,18 @@ input[type=range]{
 
 <body>
 
-<div id="scale-wrapper">
-
-<div class="container">
-
-<div class="title">Next Boss</div>
-
-<div id="boss-icons" class="boss-row"></div>
-
-<div id="countdown" class="countdown">00:00:00</div>
-
-<div id="boss-names" class="boss-names"></div>
-
-<div class="spacer"></div>
-
-<div id="upcoming" class="upcoming"></div>
-
-</div>
-
-</div>
-
 <div class="slider-container">
 Scale
 <input id="scale-slider" type="range" min="0.4" max="2.0" step="0.01" value="1">
 </div>
-
+<div id="scale-wrapper">
+<div class="container">
+<div class="title">Next Boss</div>
+<div id="boss-icons" class="boss-row"></div>
+<div id="countdown" class="countdown">00:00:00</div>
+<div id="boss-names" class="boss-names"></div>
+</div>
+</div>
 <script type="module">
 
 import { schedule, IMG_BASE, imgMap } from './schedule.js';

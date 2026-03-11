@@ -72,7 +72,7 @@ const IMG_BASE = "./boss-icons/";
 
 // Converts boss name → filename
 function bossToFile(name) {
-    return name.replace(/ /g, "_") + ".png";
+    return name.replace(/ /g, "_").toLowerCase() + ".png";
 }
 
 const imgMap = new Proxy({}, {
