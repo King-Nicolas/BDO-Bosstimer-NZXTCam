@@ -21,16 +21,28 @@ body,html{
     justify-content:center;
 }
 
+/* scaling wrapper */
+
+#scale-wrapper{
+    transform-origin:top center;
+}
+
+/* main container */
+
 .container{
     width:420px;
     text-align:center;
 }
+
+/* title */
 
 .title{
     font-size:28px;
     font-weight:700;
     margin-bottom:15px;
 }
+
+/* boss icons */
 
 .boss-row{
     display:flex;
@@ -48,6 +60,8 @@ body,html{
     padding:8px;
 }
 
+/* countdown */
+
 .countdown{
     font-size:56px;
     font-weight:700;
@@ -56,10 +70,20 @@ body,html{
     color:#49c57a;
 }
 
+/* boss names */
+
 .boss-names{
     font-size:22px;
     font-weight:700;
 }
+
+/* spacer under timer */
+
+.spacer{
+    height:140px;
+}
+
+/* upcoming bosses */
 
 .upcoming{
     margin-top:20px;
@@ -67,10 +91,25 @@ body,html{
     color:#bbb;
 }
 
+/* slider */
+
+.slider-container{
+    position:fixed;
+    bottom:20px;
+    width:300px;
+    text-align:center;
+}
+
+input[type=range]{
+    width:100%;
+}
+
 </style>
 </head>
 
 <body>
+
+<div id="scale-wrapper">
 
 <div class="container">
 
@@ -82,10 +121,18 @@ body,html{
 
 <div id="boss-names" class="boss-names"></div>
 
+<div class="spacer"></div>
+
 <div id="upcoming" class="upcoming"></div>
 
 </div>
 
+</div>
+
+<div class="slider-container">
+Scale
+<input id="scale-slider" type="range" min="0.4" max="2.0" step="0.01" value="1">
+</div>
 
 <script type="module">
 
@@ -95,7 +142,7 @@ import { schedule, IMG_BASE, imgMap } from './schedule.js';
 
 /* boss colors */
 
-const bossColors = {
+const bossColors={
     "Uturi":"#3bd16f",
     "Kutum":"#7a7aff",
     "Sangoon":"#2ecc71",
@@ -128,7 +175,6 @@ function getNextBosses(){
         let spawn=new Date(now);
 
         spawn.setHours(h,m,0,0);
-
         spawn.setDate(now.getDate()+(slot.day-currentDay));
 
         if(spawn<now) spawn.setDate(spawn.getDate()+7);
@@ -187,17 +233,11 @@ function update(){
 
     renderBossIcons(current.bosses);
 
-
-
     const seconds=Math.floor(current.diff/1000);
 
     const h=Math.floor(seconds/3600);
-
     const m=Math.floor((seconds%3600)/60);
-
     const s=seconds%60;
-
-
 
     document.getElementById("countdown").innerText=
         String(h).padStart(2,"0")+":"+
@@ -214,10 +254,32 @@ function update(){
 
     }).join(" | ");
 
-
-
     document.getElementById("boss-names").innerHTML=names;
 }
+
+
+
+/* scaling slider */
+
+const slider=document.getElementById("scale-slider");
+const wrapper=document.getElementById("scale-wrapper");
+
+/* load saved scale */
+
+const savedScale=localStorage.getItem("bossTimerScale");
+
+if(savedScale){
+    slider.value=savedScale;
+    wrapper.style.transform=`scale(${savedScale})`;
+}
+
+slider.addEventListener("input",()=>{
+
+    wrapper.style.transform=`scale(${slider.value})`;
+
+    localStorage.setItem("bossTimerScale",slider.value);
+
+});
 
 
 
