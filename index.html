@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BDO Boss Timer</title>
+
+<style>
+
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+body,html{
+    margin:0;
+    padding:0;
+    background:#0f0f0f;
+    color:white;
+    font-family:'Roboto',sans-serif;
+    height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.container{
+    width:420px;
+    text-align:center;
+}
+
+.title{
+    font-size:28px;
+    font-weight:700;
+    margin-bottom:15px;
+}
+
+.boss-row{
+    display:flex;
+    justify-content:center;
+    gap:20px;
+    margin-bottom:15px;
+}
+
+.boss-icon{
+    width:160px;
+    height:160px;
+    object-fit:contain;
+    background:#1a1a1a;
+    border-radius:100px;
+    padding:8px;
+}
+
+.countdown{
+    font-size:56px;
+    font-weight:700;
+    margin-top:10px;
+    margin-bottom:10px;
+    color:#49c57a;
+}
+
+.boss-names{
+    font-size:22px;
+    font-weight:700;
+}
+
+.upcoming{
+    margin-top:20px;
+    font-size:18px;
+    color:#bbb;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="title">Next Boss</div>
+
+<div id="boss-icons" class="boss-row"></div>
+
+<div id="countdown" class="countdown">00:00:00</div>
+
+<div id="boss-names" class="boss-names"></div>
+
+<div id="upcoming" class="upcoming"></div>
+
+</div>
+
+
+<script type="module">
+
+import { schedule, IMG_BASE, imgMap } from './schedule.js';
+
+
+
+/* boss colors */
+
+const bossColors = {
+    "Uturi":"#3bd16f",
+    "Kutum":"#7a7aff",
+    "Sangoon":"#2ecc71",
+    "Karanda":"#3498db",
+    "Golden Pig King":"#f1c40f",
+    "Nouver":"#ff7f27",
+    "Bulgasal":"#ff4040",
+    "Kzarka":"#ff4040",
+    "Offin":"#2ecc71",
+    "Garmoth":"#ff4040",
+    "Vell":"#2dd4bf",
+    "Black Shadow":"#ffffff",
+    "Quint":"#ffa36c",
+    "Muraka":"#ffffff"
+};
+
+
+
+function getNextBosses(){
+
+    const now=new Date();
+    const currentDay=now.getDay()||7;
+
+    let candidates=[];
+
+    schedule.forEach(slot=>{
+
+        const [h,m]=slot.time.split(":").map(Number);
+
+        let spawn=new Date(now);
+
+        spawn.setHours(h,m,0,0);
+
+        spawn.setDate(now.getDate()+(slot.day-currentDay));
+
+        if(spawn<now) spawn.setDate(spawn.getDate()+7);
+
+        const diff=spawn-now;
+
+        candidates.push({
+            time:spawn,
+            diff,
+            bosses:slot.bosses
+        });
+
+    });
+
+    candidates.sort((a,b)=>a.diff-b.diff);
+
+    return candidates.slice(0,5);
+
+}
+
+
+
+function renderBossIcons(bosses){
+
+    const container=document.getElementById("boss-icons");
+
+    container.innerHTML="";
+
+    bosses.forEach(boss=>{
+
+        const img=document.createElement("img");
+
+        img.src=IMG_BASE+imgMap[boss];
+
+        img.className="boss-icon";
+
+        img.style.border="5px solid "+(bossColors[boss]||"#888");
+
+        img.title=boss;
+
+        container.appendChild(img);
+
+    });
+
+}
+
+
+
+function update(){
+
+    const next=getNextBosses();
+
+    if(!next.length) return;
+
+    const current=next[0];
+
+    renderBossIcons(current.bosses);
+
+
+
+    const seconds=Math.floor(current.diff/1000);
+
+    const h=Math.floor(seconds/3600);
+
+    const m=Math.floor((seconds%3600)/60);
+
+    const s=seconds%60;
+
+
+
+    document.getElementById("countdown").innerText=
+        String(h).padStart(2,"0")+":"+
+        String(m).padStart(2,"0")+":"+
+        String(s).padStart(2,"0");
+
+
+
+    const names=current.bosses.map(boss=>{
+
+        const color=bossColors[boss]||"#fff";
+
+        return `<span style="color:${color}">${boss}</span>`;
+
+    }).join(" | ");
+
+
+
+    document.getElementById("boss-names").innerHTML=names;
+}
+
+
+
+setInterval(update,1000);
+
+update();
+
+</script>
+
+</body>
+</html>
