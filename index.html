@@ -1,262 +1,542 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BDO Boss Timer</title>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BDO Boss Timer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
 
-body, html {
-    margin: 0;
-    padding: 0;
-    background: #0f0f0f;
-    color: white;
-    font-family: 'Roboto', sans-serif;
-    height: 100vh;
-    overflow: hidden;
-}
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            background: #0f0f0f;
+            color: white;
+            font-family: 'Roboto', sans-serif;
+            height: 100vh;
+            overflow: hidden;
+        }
 
-/* draggable & scalable wrapper */
-#scale-wrapper {
-    position: absolute;
-    cursor: move;
-    overflow: visible;
-    min-width: 50px;
-    min-height: 50px;
-    transform-origin: top left;
-}
+        #scale-wrapper {
+            position: absolute;
+            cursor: move;
+            overflow: visible;
+            min-width: 50px;
+            min-height: 50px;
+            transform-origin: top left;
+        }
 
-/* main container inside wrapper */
-.container {
-    width: 320px;
-    text-align: center;
-    padding: 10px;
-}
+        .container {
+            width: 320px;
+            text-align: center;
+            padding: 10px;
+        }
 
-/* title */
-.title {
-    font-size: 28px;
-    font-weight: 700;
-    margin-bottom: 15px;
-}
+        .title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
 
-/* boss icons */
-.boss-row {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    margin-bottom: 15px;
-}
-.boss-icon {
-    width: 160px;
-    height: 160px;
-    object-fit: contain;
-    background: #1a1a1a;
-    border-radius: 100px;
-    padding: 8px;
-}
+        .boss-row {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
 
-/* countdown */
-.countdown {
-    font-size: 56px;
-    font-weight: 700;
-    margin: 10px 0;
-    color: #49c57a;
-}
+        .boss-icon {
+            width: 160px;
+            height: 160px;
+            object-fit: contain;
+            background: #1a1a1a;
+            border-radius: 100px;
+            padding: 8px;
+        }
 
-/* boss names */
-.boss-names {
-    font-size: 22px;
-    font-weight: 700;
-}
+        .countdown {
+            font-size: 56px;
+            font-weight: 700;
+            margin: 10px 0;
+            color: #49c57a;
+        }
 
-/* scale handle */
-#scale-handle {
-    width: 5px;
-    height: 5px;
-    background: #49c57a;
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    cursor: se-resize;
-    border-radius: 4px;
-}
-</style>
+        .boss-names {
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        /* Controls visibility */
+        #scale-handle,
+        #toggle-controls {
+            transition: opacity 0.6s ease-out;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #scale-wrapper:hover #scale-handle,
+        #scale-wrapper.controls-visible #scale-handle,
+        #scale-wrapper.controls-visible #toggle-controls {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #scale-handle {
+            width: 5px;
+            height: 5px;
+            background: #49c57a;
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            cursor: se-resize;
+            border-radius: 4px;
+        }
+
+        .banner-notification {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(15, 15, 15, 0.94);
+            color: #49c57a;
+            padding: 12px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 500;
+            z-index: 30;
+            border-bottom: 1px solid #49c57a44;
+            opacity: 0;
+            transform: translateY(-100%);
+            transition: opacity 0.4s, transform 0.4s;
+            pointer-events: auto;
+        }
+
+        .banner-notification.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .banner-close {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            font-size: 20px;
+            color: #aaa;
+        }
+
+        #schedule-dropdown {
+            position: absolute;
+            top: 36px;
+            right: 8px;
+            background: #1a1a1a;
+            border: 1px solid #49c57a44;
+            border-radius: 6px;
+            padding: 6px 0;
+            min-width: 220px;
+            z-index: 25;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+        }
+
+        #schedule-dropdown.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #schedule-dropdown div {
+            padding: 8px 16px;
+            cursor: pointer;
+            color: #ddd;
+        }
+
+        #schedule-dropdown div:hover {
+            background: #49c57a22;
+            color: white;
+        }
+
+        #schedule-dropdown div.current {
+            color: #49c57a;
+            font-weight: bold;
+        }
+
+        #scale-wrapper,
+        #scale-wrapper * {
+            user-select: none;
+            /* modern browsers */
+            -webkit-user-select: none;
+            /* Safari */
+            -moz-user-select: none;
+            /* Firefox */
+            -ms-user-select: none;
+            /* Edge/IE */
+        }
+    </style>
 </head>
+
 <body>
 
-<div id="scale-wrapper">
-    <div class="container">
-        <div class="title">Next Boss</div>
-        <div id="boss-icons" class="boss-row"></div>
-        <div id="countdown" class="countdown">00:00:00</div>
-        <div id="boss-names" class="boss-names"></div>
+    <div id="banner" class="banner-notification">
+        <span id="banner-text"></span>
+        <span class="banner-close">×</span>
     </div>
-    <div id="scale-handle"></div>
-</div>
 
-<script type="module">
-import { schedule, IMG_BASE, imgMap } from './schedule.js';
+    <div id="scale-wrapper">
+        <div class="container">
+            <div class="title">Next Boss</div>
+            <div id="boss-icons" class="boss-row"></div>
+            <div id="countdown" class="countdown">00:00:00</div>
+            <div id="boss-names" class="boss-names"></div>
+        </div>
+        <div id="scale-handle"></div>
+        <div id="schedule-dropdown"></div>
+    </div>
 
-/* boss colors */
-const bossColors = {
-    "Uturi": "#3bd16f", "Kutum": "#7a7aff", "Sangoon": "#2ecc71",
-    "Karanda": "#3498db", "Golden Pig King": "#f1c40f", "Nouver": "#ff7f27",
-    "Bulgasal": "#ff4040", "Kzarka": "#ff4040", "Offin": "#2ecc71",
-    "Garmoth": "#ff4040", "Vell": "#2dd4bf", "Black Shadow": "#ffffff",
-    "Quint": "#ffa36c", "Muraka": "#ffffff"
-};
+    <script type="module">
+        /* ── Configuration: add new schedules here in the future ────────────────────── */
+        const scheduleOptions = [
+            { key: "normal", label: "Normal Boss Schedule 📅", file: "./schedule.js" },
+            { key: "giftbox", label: "Gift Box Schedule 🎁", file: "./schedule_with_giftbox.js" },
+        ];
 
-/* next bosses calculation */
-function getNextBosses() {
-    const now = new Date();
-    const currentDay = now.getDay() || 7;
-    let candidates = [];
+        /* ── Pre-load ALL schedules at startup ──────────────────────────────────────── */
+        const scheduleModules = await Promise.all(
+            scheduleOptions.map(opt => import(opt.file))
+        );
 
-    schedule.forEach(slot => {
-        const [h, m] = slot.time.split(":").map(Number);
-        let spawn = new Date(now);
-        spawn.setHours(h, m, 0, 0);
-        spawn.setDate(now.getDate() + (slot.day - currentDay));
-        if (spawn < now) spawn.setDate(spawn.getDate() + 7);
-        candidates.push({ time: spawn, diff: spawn - now, bosses: slot.bosses });
-    });
+        const schedulesByKey = {};
+        scheduleOptions.forEach((opt, i) => {
+            const mod = scheduleModules[i];
+            schedulesByKey[opt.key] = {
+                schedule: mod.schedule,
+                IMG_BASE: mod.IMG_BASE,
+                imgMap: mod.imgMap
+            };
+        });
 
-    candidates.sort((a, b) => a.diff - b.diff);
-    return candidates.slice(0,5);
-}
+        /* ── Select active schedule ─────────────────────────────────────────────────── */
+        let selectedKey = localStorage.getItem("bossTimerSchedule") || "normal";
+        let currentData = schedulesByKey[selectedKey] || schedulesByKey["normal"];
 
-/* render boss icons */
-function renderBossIcons(bosses) {
-    const container = document.getElementById("boss-icons");
-    container.innerHTML = "";
-    bosses.forEach(boss => {
-        const img = document.createElement("img");
-        img.src = IMG_BASE + imgMap[boss];
-        img.className = "boss-icon";
-        img.style.border = "5px solid " + (bossColors[boss] || "#888");
-        img.title = boss;
-        container.appendChild(img);
-    });
-}
+        let schedule = currentData.schedule;
+        let IMG_BASE = currentData.IMG_BASE;
+        let imgMap = currentData.imgMap;
 
-/* update timer */
-function update() {
-    const next = getNextBosses();
-    if (!next.length) return;
-    const current = next[0];
+        /* boss colors */
+        const bossColors = {
+            "Uturi": "#3bd16f", "Kutum": "#7a7aff", "Sangoon": "#2ecc71",
+            "Karanda": "#3498db", "Golden Pig King": "#f1c40f", "Nouver": "#ff7f27",
+            "Bulgasal": "#ff4040", "Kzarka": "#ff4040", "Offin": "#2ecc71",
+            "Garmoth": "#ff4040", "Vell": "#2dd4bf", "Black Shadow": "#ffffff",
+            "Quint": "#ffa36c", "Muraka": "#ffffff", "Gift Box": "#F6D94A"
+        };
 
-    renderBossIcons(current.bosses);
+        /* next bosses calculation */
+        function getNextBosses() {
+            const now = new Date();
+            const currentDay = now.getDay() || 7;
+            let candidates = [];
 
-    const seconds = Math.floor(current.diff / 1000);
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
+            schedule.forEach(slot => {
+                const [h, m] = slot.time.split(":").map(Number);
+                let spawn = new Date(now);
+                spawn.setHours(h, m, 0, 0);
+                spawn.setDate(now.getDate() + (slot.day - currentDay));
+                if (spawn < now) spawn.setDate(spawn.getDate() + 7);
+                candidates.push({ time: spawn, diff: spawn - now, bosses: slot.bosses });
+            });
 
-    document.getElementById("countdown").innerText =
-        String(h).padStart(2,"0") + ":" +
-        String(m).padStart(2,"0") + ":" +
-        String(s).padStart(2,"0");
+            candidates.sort((a, b) => a.diff - b.diff);
+            return candidates.slice(0, 5);
+        }
 
-    const names = current.bosses.map(boss => {
-        const color = bossColors[boss] || "#fff";
-        return `<span style="color:${color}">${boss}</span>`;
-    }).join(" | ");
-    document.getElementById("boss-names").innerHTML = names;
-}
+        /* render boss icons */
+        function renderBossIcons(bosses) {
+            const container = document.getElementById("boss-icons");
+            container.innerHTML = "";
+            bosses.forEach(boss => {
+                const img = document.createElement("img");
+                img.src = IMG_BASE + imgMap[boss];
+                img.className = "boss-icon";
+                img.style.border = "5px solid " + (bossColors[boss] || "#888");
+                img.title = boss;
+                container.appendChild(img);
+            });
+        }
 
-setInterval(update, 1000);
-update();
+        /* update timer */
+        function update() {
+            const next = getNextBosses();
+            if (!next.length) return;
+            const current = next[0];
 
-/* dragging logic with persistence */
-const wrapper = document.getElementById("scale-wrapper");
-let isDragging = false;
-let offsetX, offsetY;
+            renderBossIcons(current.bosses);
 
-// restore saved position
-let savedPos = JSON.parse(localStorage.getItem("bossTimerPosition"));
-if (savedPos) {
-    wrapper.style.left = savedPos.left + "px";
-    wrapper.style.top = savedPos.top + "px";
-} else {
-    wrapper.style.left = "50px";
-    wrapper.style.top = "50px";
-}
+            const seconds = Math.floor(current.diff / 1000);
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
 
-wrapper.addEventListener("mousedown", (e) => {
-    if (e.target === wrapper || e.target.closest(".container")) {
-        isDragging = true;
-        offsetX = e.clientX - wrapper.offsetLeft;
-        offsetY = e.clientY - wrapper.offsetTop;
-        wrapper.style.cursor = "grabbing";
-    }
-});
+            document.getElementById("countdown").innerText =
+                String(h).padStart(2, "0") + ":" +
+                String(m).padStart(2, "0") + ":" +
+                String(s).padStart(2, "0");
 
-document.addEventListener("mousemove", (e) => {
-    if (!isDragging) return;
-    wrapper.style.left = e.clientX - offsetX + "px";
-    wrapper.style.top = e.clientY - offsetY + "px";
-});
+            const names = current.bosses.map(boss => {
+                const color = bossColors[boss] || "#fff";
+                return `<span style="color:${color}">${boss}</span>`;
+            }).join(" | ");
+            document.getElementById("boss-names").innerHTML = names;
+        }
 
-document.addEventListener("mouseup", () => {
-    if (isDragging) {
-        // save position
-        localStorage.setItem("bossTimerPosition", JSON.stringify({
-            left: wrapper.offsetLeft,
-            top: wrapper.offsetTop
-        }));
-    }
-    isDragging = false;
-    wrapper.style.cursor = "move";
-});
+        setInterval(update, 1000);
+        update();
 
-/* scaling logic with persistence */
-const handle = document.getElementById("scale-handle");
-let isScaling = false;
-let startX, startY, startScale = 1;
-const containerEl = wrapper.querySelector(".container");
-const minWidth = 50;  // minimum allowed width
-const minHeight = 50; // minimum allowed height
+        /* ── Dragging logic with persistence ────────────────────────────────────────── */
+        const wrapper = document.getElementById("scale-wrapper");
+        let isDragging = false;
+        let offsetX, offsetY;
 
-// load saved scale
-let savedScale = localStorage.getItem("bossTimerScale");
-if (savedScale) {
-    wrapper.style.transform = `scale(${savedScale})`;
-}
+        let savedPos = JSON.parse(localStorage.getItem("bossTimerPosition"));
+        if (savedPos) {
+            wrapper.style.left = savedPos.left + "px";
+            wrapper.style.top = savedPos.top + "px";
+        } else {
+            wrapper.style.left = "50px";
+            wrapper.style.top = "50px";
+        }
 
-handle.addEventListener("mousedown", (e) => {
-    e.stopPropagation();
-    isScaling = true;
-    startX = e.clientX;
-    startY = e.clientY;
-    const style = window.getComputedStyle(wrapper);
-    const transform = style.transform || "none";
-    startScale = transform !== "none" && transform !== "matrix(1, 0, 0, 1, 0, 0)"
-        ? parseFloat(transform.split('(')[1].split(')')[0].split(',')[0])
-        : 1;
-});
+        wrapper.addEventListener("mousedown", (e) => {
+            if (e.target === wrapper || e.target.closest(".container") || e.target.id === "scale-handle") {
+                isDragging = true;
+                offsetX = e.clientX - wrapper.offsetLeft;
+                offsetY = e.clientY - wrapper.offsetTop;
+                wrapper.style.cursor = "grabbing";
+            }
+        });
 
-document.addEventListener("mousemove", (e) => {
-    if (!isScaling) return;
-    const dx = e.clientX - startX;
-    const dy = e.clientY - startY;
-    const delta = Math.max(dx, dy) * 0.01;
-    let newScale = startScale + delta;
+        document.addEventListener("mousemove", (e) => {
+            if (!isDragging) return;
+            wrapper.style.left = (e.clientX - offsetX) + "px";
+            wrapper.style.top = (e.clientY - offsetY) + "px";
+        });
 
-    // enforce minimum size
-    const scaledWidth = containerEl.offsetWidth * newScale;
-    const scaledHeight = containerEl.offsetHeight * newScale;
-    if (scaledWidth < minWidth) newScale = minWidth / containerEl.offsetWidth;
-    if (scaledHeight < minHeight) newScale = minHeight / containerEl.offsetHeight;
+        document.addEventListener("mouseup", () => {
+            if (isDragging) {
+                localStorage.setItem("bossTimerPosition", JSON.stringify({
+                    left: wrapper.offsetLeft,
+                    top: wrapper.offsetTop
+                }));
+            }
+            isDragging = false;
+            wrapper.style.cursor = "move";
+        });
 
-    wrapper.style.transform = `scale(${newScale})`;
-    localStorage.setItem("bossTimerScale", newScale);
-});
+        /* ── Scaling logic with persistence ─────────────────────────────────────────── */
+        const handle = document.getElementById("scale-handle");
+        let isScaling = false;
+        let startX, startY, startScale = 1;
+        const containerEl = wrapper.querySelector(".container");
+        const minWidth = 50;
+        const minHeight = 50;
 
-document.addEventListener("mouseup", () => {
-    isScaling = false;
-});
-</script>
+        let savedScale = localStorage.getItem("bossTimerScale");
+        if (savedScale) {
+            wrapper.style.transform = `scale(${savedScale})`;
+        }
+
+        handle.addEventListener("mousedown", (e) => {
+            e.stopPropagation();
+            isScaling = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            const style = window.getComputedStyle(wrapper);
+            const transform = style.transform || "none";
+            startScale = transform !== "none" && transform !== "matrix(1, 0, 0, 1, 0, 0)"
+                ? parseFloat(transform.split('(')[1].split(')')[0].split(',')[0])
+                : 1;
+        });
+
+        document.addEventListener("mousemove", (e) => {
+            if (!isScaling) return;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            const delta = Math.max(dx, dy) * 0.01;
+            let newScale = startScale + delta;
+
+            const scaledWidth = containerEl.offsetWidth * newScale;
+            const scaledHeight = containerEl.offsetHeight * newScale;
+            if (scaledWidth < minWidth) newScale = minWidth / containerEl.offsetWidth;
+            if (scaledHeight < minHeight) newScale = minHeight / containerEl.offsetHeight;
+
+            wrapper.style.transform = `scale(${newScale})`;
+            localStorage.setItem("bossTimerScale", newScale);
+        });
+
+        document.addEventListener("mouseup", () => {
+            isScaling = false;
+        });
+
+        /* ── Controls visibility timeout (scale handle + toggle) ────────────────────── */
+        let controlsTimer = null;
+        const CONTROLS_HIDE_DELAY = 10000; // 10 seconds
+
+        function showControls() {
+            wrapper.classList.add("controls-visible");
+            if (controlsTimer) clearTimeout(controlsTimer);
+            controlsTimer = setTimeout(hideControls, CONTROLS_HIDE_DELAY);
+        }
+
+        function hideControls() {
+            wrapper.classList.remove("controls-visible");
+            controlsTimer = null;
+        }
+
+        function resetControlsTimer() {
+            if (controlsTimer) clearTimeout(controlsTimer);
+            controlsTimer = setTimeout(hideControls, CONTROLS_HIDE_DELAY);
+        }
+
+        /* ── Schedule selector (toggle + dropdown) ──────────────────────────────────── */
+        const dropdown = document.getElementById("schedule-dropdown");
+        let interactionOccurred = localStorage.getItem("bossTimerInteracted") === "true";
+
+        /* Create toggle inside a container for visibility control */
+        const toggleContainer = document.createElement("div");
+        toggleContainer.id = "toggle-controls";
+        toggleContainer.style.cssText = `
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    z-index: 15;
+`;
+
+        const toggle = document.createElement("div");
+        toggle.style.cssText = `
+    width: 28px;
+    height: 28px;
+    background: rgba(73, 197, 122, 0.18);
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: background 0.18s;
+`;
+        toggle.textContent = selectedKey === "giftbox" ? "🎁" : "📅";
+        toggle.title = "Select schedule";
+
+        toggleContainer.appendChild(toggle);
+        wrapper.appendChild(toggleContainer);
+
+        /* ── Interaction & hover logic ──────────────────────────────────────────────── */
+
+        // Reveal on first real interaction
+        wrapper.addEventListener("click", () => {
+            if (!interactionOccurred) {
+                interactionOccurred = true;
+                localStorage.setItem("bossTimerInteracted", "true");
+                showControls();
+            }
+        }, { once: true });
+
+        // Hover on wrapper / toggle / dropdown → show controls + reset timer
+        wrapper.addEventListener("mouseenter", showControls);
+        toggle.addEventListener("mouseenter", resetControlsTimer);
+        dropdown.addEventListener("mouseenter", resetControlsTimer);
+
+        // Leaving any of them → start/restart hide timer
+        wrapper.addEventListener("mouseleave", resetControlsTimer);
+        toggle.addEventListener("mouseleave", resetControlsTimer);
+        dropdown.addEventListener("mouseleave", resetControlsTimer);
+
+        // Also show controls when starting to drag or scale
+        wrapper.addEventListener("mousedown", showControls);
+        handle.addEventListener("mousedown", showControls);
+
+        function showDropdown() {
+            dropdown.innerHTML = "";
+            scheduleOptions.forEach(opt => {
+                const item = document.createElement("div");
+                item.textContent = opt.label;
+                if (opt.key === selectedKey) item.classList.add("current");
+                item.onclick = () => {
+                    if (opt.key === selectedKey) return;
+
+                    selectedKey = opt.key;
+                    localStorage.setItem("bossTimerSchedule", selectedKey);
+
+                    currentData = schedulesByKey[selectedKey];
+                    schedule = currentData.schedule;
+                    IMG_BASE = currentData.IMG_BASE;
+                    imgMap = currentData.imgMap;
+
+                    update();
+                    toggle.textContent = selectedKey === "giftbox" ? "🎁" : "📅";
+
+                    showBanner(`Now using ${opt.label}`);
+                    hideDropdown();
+                };
+                dropdown.appendChild(item);
+            });
+            dropdown.classList.add("visible");
+        }
+
+        function hideDropdown() {
+            dropdown.classList.remove("visible");
+        }
+
+        function showBanner(message) {
+            const banner = document.getElementById("banner");
+            const text = document.getElementById("banner-text");
+            text.textContent = message;
+
+            banner.classList.add("visible");
+
+            const close = banner.querySelector(".banner-close");
+            const closeFn = () => {
+                banner.classList.remove("visible");
+            };
+            close.onclick = closeFn;
+
+            setTimeout(closeFn, 5000);
+        }
+
+        // Hover behavior for dropdown
+        let hideTimer = null;
+
+        toggle.addEventListener("mouseenter", () => {
+            if (!interactionOccurred) return;
+            toggle.style.background = "rgba(73, 197, 122, 0.35)";
+            showDropdown();
+            if (hideTimer) clearTimeout(hideTimer);
+        });
+
+        toggle.addEventListener("mouseleave", () => {
+            if (!interactionOccurred) return;
+            toggle.style.background = "rgba(73, 197, 122, 0.18)";
+            hideTimer = setTimeout(() => {
+                hideDropdown();
+            }, 320);
+        });
+
+        dropdown.addEventListener("mouseenter", () => {
+            if (hideTimer) {
+                clearTimeout(hideTimer);
+                hideTimer = null;
+            }
+        });
+
+        dropdown.addEventListener("mouseleave", () => {
+            hideTimer = setTimeout(hideDropdown, 600);
+        });
+    </script>
 </body>
+
 </html>
