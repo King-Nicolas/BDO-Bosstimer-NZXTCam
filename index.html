@@ -70,7 +70,8 @@
 
         /* Controls visibility */
         #scale-handle,
-        #toggle-controls {
+        #toggle-controls,
+        #hide-countdown {
             transition: opacity 0.6s ease-out;
             opacity: 0;
             pointer-events: none;
@@ -78,7 +79,8 @@
 
         #scale-wrapper:hover #scale-handle,
         #scale-wrapper.controls-visible #scale-handle,
-        #scale-wrapper.controls-visible #toggle-controls {
+        #scale-wrapper.controls-visible #toggle-controls,
+        #scale-wrapper.controls-visible #hide-countdown {
             opacity: 1;
             pointer-events: auto;
         }
@@ -94,99 +96,153 @@
             border-radius: 4px;
         }
 
-        .banner-notification {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: rgba(15, 15, 15, 0.94);
-            color: #49c57a;
-            padding: 12px;
-            text-align: center;
-            font-size: 16px;
-            font-weight: 500;
-            z-index: 30;
-            border-bottom: 1px solid #49c57a44;
+        #flash-overlay {
+            position: fixed;
+            inset: 0;
+            background: white;
             opacity: 0;
-            transform: translateY(-100%);
-            transition: opacity 0.4s, transform 0.4s;
-            pointer-events: auto;
+            pointer-events: none;
+            z-index: 100;
         }
 
-        .banner-notification.visible {
-            opacity: 1;
-            transform: translateY(0);
+        @keyframes flash-pulse {
+            0%   { opacity: 0; }
+            50%  { opacity: var(--flash-intensity, 0.18); }
+            100% { opacity: 0; }
         }
 
-        .banner-close {
+        #flash-overlay.flashing {
+            animation: flash-pulse 1s ease-in-out infinite;
+        }
+
+        #flash-settings {
             position: absolute;
-            right: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            cursor: pointer;
-            font-size: 20px;
-            color: #aaa;
-        }
-
-        #schedule-dropdown {
-            position: absolute;
-            top: 36px;
+            top: 40px;
             right: 8px;
             background: #1a1a1a;
             border: 1px solid #49c57a44;
-            border-radius: 6px;
-            padding: 6px 0;
-            min-width: 220px;
-            z-index: 25;
+            border-radius: 8px;
+            padding: 12px 14px;
+            z-index: 20;
+            min-width: 190px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.7);
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.2s;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
         }
 
-        #schedule-dropdown.visible {
+        #flash-settings.visible {
             opacity: 1;
             pointer-events: auto;
         }
 
-        #schedule-dropdown div {
-            padding: 8px 16px;
-            cursor: pointer;
-            color: #ddd;
+        #flash-settings label {
+            display: block;
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 5px;
+            font-family: 'Roboto', sans-serif;
         }
 
-        #schedule-dropdown div:hover {
-            background: #49c57a22;
+        #flash-settings input[type="range"] {
+            width: 100%;
+            accent-color: #49c57a;
+            margin-bottom: 10px;
+        }
+
+        #flash-settings input[type="number"] {
+            width: 100%;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 4px;
             color: white;
+            padding: 4px 8px;
+            font-size: 13px;
+            box-sizing: border-box;
         }
 
-        #schedule-dropdown div.current {
-            color: #49c57a;
-            font-weight: bold;
+        #position-label {
+            position: absolute;
+            top: -20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 10px;
+            color: #fff;
+            font-family: 'Roboto', sans-serif;
+            white-space: nowrap;
+            transition: opacity 0.6s ease-out;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #scale-wrapper.controls-visible #position-label {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #position-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 10px;
+            color: #fff;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        #position-label span {
+            color: #888;
+        }
+
+        #position-label input {
+            width: 46px;
+            background: #1a1a1a;
+            border: 1px solid #444;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 10px;
+            font-family: 'Roboto', sans-serif;
+            padding: 1px 4px;
+            text-align: center;
+            -moz-appearance: textfield;
+        }
+
+        #position-label input::-webkit-outer-spin-button,
+        #position-label input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+        }
+
+        #position-label input:focus {
+            outline: 1px solid #49c57a;
+            border-color: #49c57a;
         }
 
         #scale-wrapper,
         #scale-wrapper * {
             user-select: none;
-            /* modern browsers */
             -webkit-user-select: none;
-            /* Safari */
             -moz-user-select: none;
-            /* Firefox */
             -ms-user-select: none;
-            /* Edge/IE */
+        }
+
+        #position-label input {
+            user-select: text;
+            -webkit-user-select: text;
+            -moz-user-select: text;
         }
     </style>
 </head>
 
 <body>
 
-    <div id="banner" class="banner-notification">
-        <span id="banner-text"></span>
-        <span class="banner-close">×</span>
-    </div>
+    <div id="flash-overlay"></div>
 
     <div id="scale-wrapper">
+        <div id="position-label">
+            <span>x:</span><input type="number" id="pos-x" value="0">
+            <span>y:</span><input type="number" id="pos-y" value="0">
+        </div>
         <div class="container">
             <div class="title">Next Boss</div>
             <div id="boss-icons" class="boss-row"></div>
@@ -194,61 +250,136 @@
             <div id="boss-names" class="boss-names"></div>
         </div>
         <div id="scale-handle"></div>
-        <div id="schedule-dropdown"></div>
     </div>
 
-    <script type="module">
-        /* ── Configuration: add new schedules here in the future ────────────────────── */
-        const scheduleOptions = [
-            { key: "normal", label: "Normal Boss Schedule 📅", file: "./schedule.js" },
-            { key: "giftbox", label: "Gift Box Schedule 🎁", file: "./schedule_with_giftbox.js" },
+    <script>
+        /* ── Default EU boss schedule (used to seed localStorage on first load) ──────── */
+        const DEFAULT_SCHEDULE = [
+            // Monday
+            { day: 1, time: "00:15", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
+            { day: 1, time: "00:15", boss: "Kutum",          color: "#7a7aff", icon: "./boss-icons/kutum.png",           active: true },
+            { day: 1, time: "02:00", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
+            { day: 1, time: "02:00", boss: "Karanda",        color: "#3498db", icon: "./boss-icons/karanda.png",         active: true },
+            { day: 1, time: "12:00", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
+            { day: 1, time: "12:00", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
+            { day: 1, time: "14:00", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+            { day: 1, time: "16:00", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
+            { day: 1, time: "16:00", boss: "Kutum",          color: "#7a7aff", icon: "./boss-icons/kutum.png",           active: true },
+            { day: 1, time: "19:00", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
+            { day: 1, time: "19:00", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
+            { day: 1, time: "22:15", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
+            { day: 1, time: "22:15", boss: "Kzarka",         color: "#ff4040", icon: "./boss-icons/kzarka.png",          active: true },
+            { day: 1, time: "23:15", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+            // Tuesday
+            { day: 2, time: "00:15", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
+            { day: 2, time: "00:15", boss: "Karanda",        color: "#3498db", icon: "./boss-icons/karanda.png",         active: true },
+            { day: 2, time: "12:00", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
+            { day: 2, time: "12:00", boss: "Kutum",          color: "#7a7aff", icon: "./boss-icons/kutum.png",           active: true },
+            { day: 2, time: "14:00", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+            { day: 2, time: "16:00", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
+            { day: 2, time: "16:00", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
+            { day: 2, time: "19:00", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
+            { day: 2, time: "19:00", boss: "Kzarka",         color: "#ff4040", icon: "./boss-icons/kzarka.png",          active: true },
+            { day: 2, time: "22:15", boss: "Quint",          color: "#ffa36c", icon: "./boss-icons/quint.png",           active: true },
+            { day: 2, time: "22:15", boss: "Muraka",         color: "#ffffff", icon: "./boss-icons/muraka.png",          active: true },
+            { day: 2, time: "23:15", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+            // Wednesday
+            { day: 3, time: "00:15", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
+            { day: 3, time: "00:15", boss: "Kzarka",         color: "#ff4040", icon: "./boss-icons/kzarka.png",          active: true },
+            { day: 3, time: "12:00", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
+            { day: 3, time: "12:00", boss: "Karanda",        color: "#3498db", icon: "./boss-icons/karanda.png",         active: true },
+            { day: 3, time: "14:00", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+            { day: 3, time: "16:00", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
+            { day: 3, time: "16:00", boss: "Offin",          color: "#2ecc71", icon: "./boss-icons/offin.png",           active: true },
+            { day: 3, time: "19:00", boss: "Vell",           color: "#2dd4bf", icon: "./boss-icons/vell.png",            active: true },
+            { day: 3, time: "22:15", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
+            { day: 3, time: "22:15", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
+            { day: 3, time: "23:15", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+            // Thursday
+            { day: 4, time: "00:15", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
+            { day: 4, time: "00:15", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
+            { day: 4, time: "02:00", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
+            { day: 4, time: "02:00", boss: "Kzarka",         color: "#ff4040", icon: "./boss-icons/kzarka.png",          active: true },
+            { day: 4, time: "14:00", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+            { day: 4, time: "16:00", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
+            { day: 4, time: "16:00", boss: "Karanda",        color: "#3498db", icon: "./boss-icons/karanda.png",         active: true },
+            { day: 4, time: "19:00", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
+            { day: 4, time: "19:00", boss: "Kutum",          color: "#7a7aff", icon: "./boss-icons/kutum.png",           active: true },
+            { day: 4, time: "22:15", boss: "Quint",          color: "#ffa36c", icon: "./boss-icons/quint.png",           active: true },
+            { day: 4, time: "22:15", boss: "Muraka",         color: "#ffffff", icon: "./boss-icons/muraka.png",          active: true },
+            { day: 4, time: "23:15", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+            // Friday
+            { day: 5, time: "00:15", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
+            { day: 5, time: "00:15", boss: "Karanda",        color: "#3498db", icon: "./boss-icons/karanda.png",         active: true },
+            { day: 5, time: "02:00", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
+            { day: 5, time: "02:00", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
+            { day: 5, time: "12:00", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
+            { day: 5, time: "12:00", boss: "Kutum",          color: "#7a7aff", icon: "./boss-icons/kutum.png",           active: true },
+            { day: 5, time: "14:00", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+            { day: 5, time: "16:00", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
+            { day: 5, time: "16:00", boss: "Kzarka",         color: "#ff4040", icon: "./boss-icons/kzarka.png",          active: true },
+            { day: 5, time: "19:00", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
+            { day: 5, time: "19:00", boss: "Offin",          color: "#2ecc71", icon: "./boss-icons/offin.png",           active: true },
+            { day: 5, time: "22:15", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
+            { day: 5, time: "22:15", boss: "Kutum",          color: "#7a7aff", icon: "./boss-icons/kutum.png",           active: true },
+            { day: 5, time: "23:15", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+            // Saturday
+            { day: 6, time: "00:15", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
+            { day: 6, time: "00:15", boss: "Kzarka",         color: "#ff4040", icon: "./boss-icons/kzarka.png",          active: true },
+            { day: 6, time: "02:00", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
+            { day: 6, time: "02:00", boss: "Offin",          color: "#2ecc71", icon: "./boss-icons/offin.png",           active: true },
+            { day: 6, time: "12:00", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
+            { day: 6, time: "12:00", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
+            { day: 6, time: "14:00", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+            { day: 6, time: "16:00", boss: "Black Shadow",   color: "#ffffff", icon: "./boss-icons/black_shadow.png",    active: true },
+            { day: 6, time: "19:00", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
+            { day: 6, time: "19:00", boss: "Karanda",        color: "#3498db", icon: "./boss-icons/karanda.png",         active: true },
+            // Sunday
+            { day: 7, time: "00:15", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
+            { day: 7, time: "00:15", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
+            { day: 7, time: "02:00", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
+            { day: 7, time: "02:00", boss: "Kutum",          color: "#7a7aff", icon: "./boss-icons/kutum.png",           active: true },
+            { day: 7, time: "12:00", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
+            { day: 7, time: "12:00", boss: "Kzarka",         color: "#ff4040", icon: "./boss-icons/kzarka.png",          active: true },
+            { day: 7, time: "14:00", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+            { day: 7, time: "16:00", boss: "Vell",           color: "#2dd4bf", icon: "./boss-icons/vell.png",            active: true },
+            { day: 7, time: "19:15", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+            { day: 7, time: "22:15", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
+            { day: 7, time: "22:15", boss: "Karanda",        color: "#3498db", icon: "./boss-icons/karanda.png",         active: true },
+            { day: 7, time: "23:15", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
         ];
 
-        /* ── Pre-load ALL schedules at startup ──────────────────────────────────────── */
-        const scheduleModules = await Promise.all(
-            scheduleOptions.map(opt => import(opt.file))
-        );
+        /* ── Load schedule from localStorage, seeding defaults on first run ─────────── */
+        if (!localStorage.getItem("bdoCustomSchedule")) {
+            localStorage.setItem("bdoCustomSchedule", JSON.stringify(DEFAULT_SCHEDULE));
+        }
+        let schedule = JSON.parse(localStorage.getItem("bdoCustomSchedule"));
 
-        const schedulesByKey = {};
-        scheduleOptions.forEach((opt, i) => {
-            const mod = scheduleModules[i];
-            schedulesByKey[opt.key] = {
-                schedule: mod.schedule,
-                IMG_BASE: mod.IMG_BASE,
-                imgMap: mod.imgMap
-            };
-        });
+        /* ── Flash settings (persisted) ─────────────────────────────────────────────── */
+        let flashIntensity = parseFloat(localStorage.getItem("flashIntensity") ?? "0.18");
+        let flashCountdown = parseInt(localStorage.getItem("flashCountdown") ?? "10", 10);
+        document.documentElement.style.setProperty("--flash-intensity", flashIntensity);
 
-        /* ── Select active schedule ─────────────────────────────────────────────────── */
-        let selectedKey = localStorage.getItem("bossTimerSchedule") || "normal";
-        let currentData = schedulesByKey[selectedKey] || schedulesByKey["normal"];
-
-        let schedule = currentData.schedule;
-        let IMG_BASE = currentData.IMG_BASE;
-        let imgMap = currentData.imgMap;
-
-        /* boss colors */
-        const bossColors = {
-            "Uturi": "#3bd16f", "Kutum": "#7a7aff", "Sangoon": "#2ecc71",
-            "Karanda": "#3498db", "Golden Pig King": "#f1c40f", "Nouver": "#ff7f27",
-            "Bulgasal": "#ff4040", "Kzarka": "#ff4040", "Offin": "#2ecc71",
-            "Garmoth": "#ff4040", "Vell": "#2dd4bf", "Black Shadow": "#ffffff",
-            "Quint": "#ffa36c", "Muraka": "#ffffff", "Gift Box": "#F6D94A"
-        };
-
-        /* next bosses calculation */
+        /* next bosses calculation — groups active entries by day+time slot */
         function getNextBosses() {
             const now = new Date();
             const currentDay = now.getDay() || 7;
-            let candidates = [];
 
-            schedule.forEach(slot => {
+            const slotMap = {};
+            schedule.forEach(entry => {
+                if (!entry.active) return;
+                const key = `${entry.day}|${entry.time}`;
+                if (!slotMap[key]) slotMap[key] = { day: entry.day, time: entry.time, entries: [] };
+                slotMap[key].entries.push(entry);
+            });
+
+            const candidates = Object.values(slotMap).map(slot => {
                 const [h, m] = slot.time.split(":").map(Number);
                 let spawn = new Date(now);
                 spawn.setHours(h, m, 0, 0);
                 spawn.setDate(now.getDate() + (slot.day - currentDay));
                 if (spawn < now) spawn.setDate(spawn.getDate() + 7);
-                candidates.push({ time: spawn, diff: spawn - now, bosses: slot.bosses });
+                return { time: spawn, diff: spawn - now, entries: slot.entries };
             });
 
             candidates.sort((a, b) => a.diff - b.diff);
@@ -256,26 +387,31 @@
         }
 
         /* render boss icons */
-        function renderBossIcons(bosses) {
+        function renderBossIcons(entries) {
             const container = document.getElementById("boss-icons");
             container.innerHTML = "";
-            bosses.forEach(boss => {
+            entries.forEach(entry => {
                 const img = document.createElement("img");
-                img.src = IMG_BASE + imgMap[boss];
+                img.src = entry.icon;
                 img.className = "boss-icon";
-                img.style.border = "5px solid " + (bossColors[boss] || "#888");
-                img.title = boss;
+                img.style.border = "5px solid " + (entry.color || "#888");
+                img.title = entry.boss;
                 container.appendChild(img);
             });
         }
 
         /* update timer */
         function update() {
+            schedule = JSON.parse(localStorage.getItem("bdoCustomSchedule")) || [];
             const next = getNextBosses();
-            if (!next.length) return;
+            if (!next.length) {
+                document.getElementById("boss-names").innerHTML =
+                    `<span style="color:#888">No active spawns — <a href="./editor.html" style="color:#49c57a">open editor</a></span>`;
+                return;
+            }
             const current = next[0];
 
-            renderBossIcons(current.bosses);
+            renderBossIcons(current.entries);
 
             const seconds = Math.floor(current.diff / 1000);
             const h = Math.floor(seconds / 3600);
@@ -287,11 +423,18 @@
                 String(m).padStart(2, "0") + ":" +
                 String(s).padStart(2, "0");
 
-            const names = current.bosses.map(boss => {
-                const color = bossColors[boss] || "#fff";
-                return `<span style="color:${color}">${boss}</span>`;
-            }).join(" | ");
+            const names = current.entries.map(entry =>
+                `<span style="color:${entry.color || "#fff"}">${entry.boss}</span>`
+            ).join(" | ");
             document.getElementById("boss-names").innerHTML = names;
+
+            // Flash background in last N seconds
+            const overlay = document.getElementById("flash-overlay");
+            if (seconds <= flashCountdown && seconds > 0) {
+                overlay.classList.add("flashing");
+            } else {
+                overlay.classList.remove("flashing");
+            }
         }
 
         setInterval(update, 1000);
@@ -311,6 +454,33 @@
             wrapper.style.top = "50px";
         }
 
+        function updatePositionLabel() {
+            document.getElementById("pos-x").value = wrapper.offsetLeft;
+            document.getElementById("pos-y").value = wrapper.offsetTop;
+        }
+        updatePositionLabel();
+
+        function applyPosition(x, y) {
+            wrapper.style.left = x + "px";
+            wrapper.style.top  = y + "px";
+            localStorage.setItem("bossTimerPosition", JSON.stringify({ left: x, top: y }));
+            updatePositionLabel();
+        }
+
+        // Commit position when user edits an input
+        ["pos-x", "pos-y"].forEach(id => {
+            const input = document.getElementById(id);
+            input.addEventListener("change", () => {
+                const x = parseInt(document.getElementById("pos-x").value, 10) || 0;
+                const y = parseInt(document.getElementById("pos-y").value, 10) || 0;
+                applyPosition(x, y);
+            });
+            // Prevent drag starting when clicking into inputs
+            input.addEventListener("mousedown", e => e.stopPropagation());
+            // Allow typing freely
+            input.addEventListener("keydown", e => e.stopPropagation());
+        });
+
         wrapper.addEventListener("mousedown", (e) => {
             if (e.target === wrapper || e.target.closest(".container") || e.target.id === "scale-handle") {
                 isDragging = true;
@@ -324,6 +494,7 @@
             if (!isDragging) return;
             wrapper.style.left = (e.clientX - offsetX) + "px";
             wrapper.style.top = (e.clientY - offsetY) + "px";
+            updatePositionLabel();
         });
 
         document.addEventListener("mouseup", () => {
@@ -382,160 +553,157 @@
             isScaling = false;
         });
 
-        /* ── Controls visibility timeout (scale handle + toggle) ────────────────────── */
+        /* ── Controls visibility timeout ─────────────────────────────────────────────── */
         let controlsTimer = null;
-        const CONTROLS_HIDE_DELAY = 10000; // 10 seconds
+        let countdownInterval = null;
+        const CONTROLS_HIDE_DELAY = 10000;
+
+        const hideCountdown = document.createElement("div");
+        hideCountdown.id = "hide-countdown";
+        hideCountdown.style.cssText = `
+            position: absolute;
+            top: -22px;
+            right: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            font-family: 'Roboto', sans-serif;
+            pointer-events: none;
+            text-align: center;
+            width: 28px;
+        `;
+
+        function startCountdownTick(secondsLeft) {
+            if (countdownInterval) clearInterval(countdownInterval);
+            hideCountdown.textContent = secondsLeft;
+            countdownInterval = setInterval(() => {
+                secondsLeft--;
+                hideCountdown.textContent = secondsLeft > 0 ? secondsLeft : "";
+                if (secondsLeft <= 0) clearInterval(countdownInterval);
+            }, 1000);
+        }
 
         function showControls() {
             wrapper.classList.add("controls-visible");
             if (controlsTimer) clearTimeout(controlsTimer);
             controlsTimer = setTimeout(hideControls, CONTROLS_HIDE_DELAY);
+            startCountdownTick(CONTROLS_HIDE_DELAY / 1000);
         }
 
         function hideControls() {
             wrapper.classList.remove("controls-visible");
             controlsTimer = null;
+            if (countdownInterval) clearInterval(countdownInterval);
+            hideCountdown.textContent = "";
         }
 
         function resetControlsTimer() {
             if (controlsTimer) clearTimeout(controlsTimer);
             controlsTimer = setTimeout(hideControls, CONTROLS_HIDE_DELAY);
+            startCountdownTick(CONTROLS_HIDE_DELAY / 1000);
         }
 
-        /* ── Schedule selector (toggle + dropdown) ──────────────────────────────────── */
-        const dropdown = document.getElementById("schedule-dropdown");
-        let interactionOccurred = localStorage.getItem("bossTimerInteracted") === "true";
-
-        /* Create toggle inside a container for visibility control */
+        /* ── Build controls: editor link + gear button + settings panel ─────────────── */
         const toggleContainer = document.createElement("div");
         toggleContainer.id = "toggle-controls";
         toggleContainer.style.cssText = `
-    position: absolute;
-    top: 6px;
-    right: 8px;
-    z-index: 15;
-`;
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            z-index: 15;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        `;
 
-        const toggle = document.createElement("div");
-        toggle.style.cssText = `
-    width: 28px;
-    height: 28px;
-    background: rgba(73, 197, 122, 0.18);
-    border-radius: 8px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    transition: background 0.18s;
-`;
-        toggle.textContent = selectedKey === "giftbox" ? "🎁" : "📅";
-        toggle.title = "Select schedule";
+        const btnStyle = `
+            width: 28px;
+            height: 28px;
+            background: rgba(73, 197, 122, 0.18);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            text-decoration: none;
+            transition: background 0.18s;
+        `;
 
-        toggleContainer.appendChild(toggle);
+        // Editor link
+        const editorLink = document.createElement("a");
+        editorLink.href = "./editor.html";
+        editorLink.title = "Open Schedule Editor";
+        editorLink.style.cssText = btnStyle;
+        editorLink.textContent = "✏️";
+        editorLink.addEventListener("mouseenter", () => editorLink.style.background = "rgba(73, 197, 122, 0.35)");
+        editorLink.addEventListener("mouseleave", () => editorLink.style.background = "rgba(73, 197, 122, 0.18)");
+
+        // Gear button
+        const gearBtn = document.createElement("div");
+        gearBtn.title = "Flash settings";
+        gearBtn.style.cssText = btnStyle;
+        gearBtn.textContent = "⚙️";
+        gearBtn.addEventListener("mouseenter", () => gearBtn.style.background = "rgba(73, 197, 122, 0.35)");
+        gearBtn.addEventListener("mouseleave", () => gearBtn.style.background = "rgba(73, 197, 122, 0.18)");
+
+        toggleContainer.appendChild(editorLink);
+        toggleContainer.appendChild(gearBtn);
         wrapper.appendChild(toggleContainer);
+        wrapper.appendChild(hideCountdown);
+
+        // Settings panel
+        const settingsPanel = document.createElement("div");
+        settingsPanel.id = "flash-settings";
+        settingsPanel.innerHTML = `
+            <label>Flash intensity</label>
+            <input type="range" id="flashIntensitySlider" min="0" max="1" step="0.01" value="${flashIntensity}">
+            <label>Flash starts at (seconds before spawn)</label>
+            <input type="number" id="flashCountdownInput" min="1" max="300" value="${flashCountdown}">
+        `;
+        wrapper.appendChild(settingsPanel);
+
+        // Wire up settings inputs
+        settingsPanel.querySelector("#flashIntensitySlider").addEventListener("input", (e) => {
+            flashIntensity = parseFloat(e.target.value);
+            document.documentElement.style.setProperty("--flash-intensity", flashIntensity);
+            localStorage.setItem("flashIntensity", flashIntensity);
+        });
+
+        settingsPanel.querySelector("#flashCountdownInput").addEventListener("change", (e) => {
+            const val = parseInt(e.target.value, 10);
+            if (!isNaN(val) && val >= 1) {
+                flashCountdown = val;
+                localStorage.setItem("flashCountdown", flashCountdown);
+            }
+        });
+
+        // Gear button toggles settings panel, with hover-out delay
+        let settingsHideTimer = null;
+
+        function showSettings() {
+            settingsPanel.classList.add("visible");
+            if (settingsHideTimer) clearTimeout(settingsHideTimer);
+        }
+
+        function scheduleHideSettings() {
+            settingsHideTimer = setTimeout(() => settingsPanel.classList.remove("visible"), 400);
+        }
+
+        gearBtn.addEventListener("mouseenter", showSettings);
+        gearBtn.addEventListener("mouseleave", scheduleHideSettings);
+        settingsPanel.addEventListener("mouseenter", () => { if (settingsHideTimer) clearTimeout(settingsHideTimer); });
+        settingsPanel.addEventListener("mouseleave", scheduleHideSettings);
+
+        // Prevent settings panel inputs from triggering drag
+        settingsPanel.addEventListener("mousedown", (e) => e.stopPropagation());
 
         /* ── Interaction & hover logic ──────────────────────────────────────────────── */
-
-        // Reveal on first real interaction
-        wrapper.addEventListener("click", () => {
-            if (!interactionOccurred) {
-                interactionOccurred = true;
-                localStorage.setItem("bossTimerInteracted", "true");
-                showControls();
-            }
-        }, { once: true });
-
-        // Hover on wrapper / toggle / dropdown → show controls + reset timer
         wrapper.addEventListener("mouseenter", showControls);
-        toggle.addEventListener("mouseenter", resetControlsTimer);
-        dropdown.addEventListener("mouseenter", resetControlsTimer);
-
-        // Leaving any of them → start/restart hide timer
         wrapper.addEventListener("mouseleave", resetControlsTimer);
-        toggle.addEventListener("mouseleave", resetControlsTimer);
-        dropdown.addEventListener("mouseleave", resetControlsTimer);
-
-        // Also show controls when starting to drag or scale
         wrapper.addEventListener("mousedown", showControls);
         handle.addEventListener("mousedown", showControls);
-
-        function showDropdown() {
-            dropdown.innerHTML = "";
-            scheduleOptions.forEach(opt => {
-                const item = document.createElement("div");
-                item.textContent = opt.label;
-                if (opt.key === selectedKey) item.classList.add("current");
-                item.onclick = () => {
-                    if (opt.key === selectedKey) return;
-
-                    selectedKey = opt.key;
-                    localStorage.setItem("bossTimerSchedule", selectedKey);
-
-                    currentData = schedulesByKey[selectedKey];
-                    schedule = currentData.schedule;
-                    IMG_BASE = currentData.IMG_BASE;
-                    imgMap = currentData.imgMap;
-
-                    update();
-                    toggle.textContent = selectedKey === "giftbox" ? "🎁" : "📅";
-
-                    showBanner(`Now using ${opt.label}`);
-                    hideDropdown();
-                };
-                dropdown.appendChild(item);
-            });
-            dropdown.classList.add("visible");
-        }
-
-        function hideDropdown() {
-            dropdown.classList.remove("visible");
-        }
-
-        function showBanner(message) {
-            const banner = document.getElementById("banner");
-            const text = document.getElementById("banner-text");
-            text.textContent = message;
-
-            banner.classList.add("visible");
-
-            const close = banner.querySelector(".banner-close");
-            const closeFn = () => {
-                banner.classList.remove("visible");
-            };
-            close.onclick = closeFn;
-
-            setTimeout(closeFn, 5000);
-        }
-
-        // Hover behavior for dropdown
-        let hideTimer = null;
-
-        toggle.addEventListener("mouseenter", () => {
-            if (!interactionOccurred) return;
-            toggle.style.background = "rgba(73, 197, 122, 0.35)";
-            showDropdown();
-            if (hideTimer) clearTimeout(hideTimer);
-        });
-
-        toggle.addEventListener("mouseleave", () => {
-            if (!interactionOccurred) return;
-            toggle.style.background = "rgba(73, 197, 122, 0.18)";
-            hideTimer = setTimeout(() => {
-                hideDropdown();
-            }, 320);
-        });
-
-        dropdown.addEventListener("mouseenter", () => {
-            if (hideTimer) {
-                clearTimeout(hideTimer);
-                hideTimer = null;
-            }
-        });
-
-        dropdown.addEventListener("mouseleave", () => {
-            hideTimer = setTimeout(hideDropdown, 600);
-        });
     </script>
 </body>
 

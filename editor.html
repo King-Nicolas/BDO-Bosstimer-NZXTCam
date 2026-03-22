@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BDO Timer Editor</title>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+    
+    body {
+        margin: 0;
+        padding: 20px;
+        background: #0f0f0f;
+        color: #eee;
+        font-family: 'Roboto', sans-serif;
+    }
+    h1 { color: #49c57a; }
+
+    .container { max-width: 1200px; margin: 0 auto; }
+
+    .boss-form {
+        background: #1a1a1a;
+        padding: 25px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+    }
+
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 18px;
+    }
+
+    label { display: block; margin-bottom: 6px; font-weight: 500; }
+    input, select {
+        width: 100%;
+        padding: 11px;
+        border-radius: 6px;
+        border: none;
+        background: #2a2a2a;
+        color: white;
+    }
+    input[type="color"] {
+        height: 48px;
+        padding: 4px;
+        cursor: pointer;
+    }
+
+    button {
+        background: #49c57a;
+        color: black;
+        font-weight: 700;
+        cursor: pointer;
+        padding: 12px 20px;
+        border: none;
+        border-radius: 6px;
+    }
+    button:hover { background: #5ce68f; }
+
+    /* Day Container */
+    .day-container {
+        background: #1a1a1a;
+        border: 1px solid #333;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        position: relative;
+    }
+
+    .day-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .remove-day {
+        background: none;
+        border: none;
+        color: #ff4040;
+        font-size: 24px;
+        cursor: pointer;
+    }
+    .remove-day:hover { color: #ff6666; }
+
+    .time-row {
+        display: flex;
+        gap: 12px;
+        align-items: end;
+        margin-bottom: 12px;
+    }
+
+    .time-row input[type="time"] {
+        flex: 1;
+    }
+
+    .remove-time {
+        background: none;
+        border: none;
+        color: #ff4040;
+        font-size: 22px;
+        cursor: pointer;
+    }
+    .remove-time:hover { color: #ff6666; }
+
+    /* Schedule Table */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #1a1a1a;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    th, td {
+        padding: 14px;
+        text-align: left;
+        border-bottom: 1px solid #333;
+    }
+    th { background: #222; }
+
+    .boss-row {
+        background: #222;
+        font-weight: 500;
+        cursor: pointer;
+    }
+    .boss-row:hover { background: #2a2a2a; }
+
+    .spawn-row {
+        background: #1f1f1f;
+    }
+
+    .icon-preview {
+        width: 48px;
+        height: 48px;
+        object-fit: contain;
+        background: #111;
+        border-radius: 8px;
+    }
+
+    .editable-color {
+        cursor: pointer;
+        border: 2px solid #444;
+        border-radius: 4px;
+    }
+
+    .tooltip-anchor {
+        position: relative;
+    }
+
+    .tooltip-anchor .tooltip-box {
+        display: none;
+        position: absolute;
+        bottom: 125%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #2a2a2a;
+        color: #ddd;
+        font-size: 12px;
+        padding: 7px 10px;
+        border-radius: 6px;
+        border: 1px solid #444;
+        white-space: nowrap;
+        z-index: 100;
+        pointer-events: none;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+    }
+
+    .tooltip-anchor:hover .tooltip-box {
+        display: block;
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>BDO Boss Timer Editor</h1>
+    <p>Define boss → Add days → Add multiple times per day</p>
+
+    <!-- Boss Info -->
+    <div class="boss-form">
+        <h2>1. Boss Information</h2>
+        <div class="grid">
+            <div>
+                <label>Boss Name</label>
+                <input type="text" id="bossName" placeholder="Gift Box">
+            </div>
+            <div>
+                <label>Color</label>
+                <input type="color" id="bossColor" value="#F6D94A">
+            </div>
+            <div>
+                <label>Icon (PNG)</label>
+                <input type="file" id="bossIcon" accept="image/png">
+            </div>
+        </div>
+    </div>
+
+    <!-- Spawn Rules -->
+    <div class="boss-form">
+        <h2>2. Spawn Rules</h2>
+        <div id="dayContainers"></div>
+        
+        <div style="text-align:center; margin-top:25px;">
+            <button onclick="addDayContainer()">+ Add New Day</button>
+        </div>
+    </div>
+
+    <button onclick="saveAllSpawns()" style="margin: 25px auto; display:block; font-size:18px; padding:14px 40px;">
+        Save All Spawns for this Boss
+    </button>
+
+    <div style="text-align:center; margin-bottom: 20px;">
+        <button id="undoBtn" onclick="undo()" disabled
+            style="background:#2a2a2a; color:#aaa; border:1px solid #444; padding:8px 20px; font-size:14px; cursor:pointer; border-radius:6px;">
+            ↩ Undo
+        </button>
+    </div>
+
+    <h2>Current Schedule (Grouped by Boss)</h2>
+    <table id="scheduleTable">
+        <thead>
+            <tr>
+                <th style="width:80px">Active</th>
+                <th>Boss</th>
+                <th>Icon</th>
+                <th>Color</th>
+                <th style="width:140px">Actions</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <div style="margin-top:25px; color:#888; font-size:14px;">
+        All changes saved locally • Only active spawns appear in timer<br>
+        <a href="index.html" style="color:#49c57a">← Back to Timer</a>
+        &nbsp;|&nbsp;
+        <span style="color:#ff6b6b; cursor:pointer;" onclick="resetToDefault()">↺ Reset to EU Default Schedule</span>
+        &nbsp;|&nbsp;
+        <span style="position:relative; display:inline-block;">
+            <span style="color:#f1c40f; cursor:pointer;" onclick="resetTimerLocation()">⌖ Reset Timer Location</span>
+            <span class="tooltip-anchor" style="color:#888; cursor:default; margin-left:3px; font-size:12px;">ⓘ
+                <span class="tooltip-box">Moves the timer widget back to the top-left corner (50, 50). Use this if you've dragged it off-screen.</span>
+            </span>
+        </span>
+    </div>
+</div>
+
+<script>
+// ====================== DATA ======================
+let schedule = JSON.parse(localStorage.getItem("bdoCustomSchedule")) || [];
+
+// ====================== UNDO STACK ======================
+const undoStack = [];
+const MAX_UNDO = 20;
+
+function pushUndo() {
+    undoStack.push(JSON.stringify(schedule));
+    if (undoStack.length > MAX_UNDO) undoStack.shift();
+    updateUndoButton();
+}
+
+function undo() {
+    if (!undoStack.length) return;
+    schedule = JSON.parse(undoStack.pop());
+    localStorage.setItem("bdoCustomSchedule", JSON.stringify(schedule));
+    renderTable();
+    updateUndoButton();
+}
+
+function updateUndoButton() {
+    const btn = document.getElementById("undoBtn");
+    if (!btn) return;
+    btn.disabled = undoStack.length === 0;
+    btn.title = undoStack.length
+        ? `Undo (${undoStack.length} step${undoStack.length > 1 ? "s" : ""} available)`
+        : "Nothing to undo";
+}
+
+const DEFAULT_SCHEDULE = [
+    // Monday
+    { day: 1, time: "00:15", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
+    { day: 1, time: "00:15", boss: "Kutum",          color: "#7a7aff", icon: "./boss-icons/kutum.png",           active: true },
+    { day: 1, time: "02:00", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
+    { day: 1, time: "02:00", boss: "Karanda",        color: "#3498db", icon: "./boss-icons/karanda.png",         active: true },
+    { day: 1, time: "12:00", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
+    { day: 1, time: "12:00", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
+    { day: 1, time: "14:00", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+    { day: 1, time: "16:00", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
+    { day: 1, time: "16:00", boss: "Kutum",          color: "#7a7aff", icon: "./boss-icons/kutum.png",           active: true },
+    { day: 1, time: "19:00", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
+    { day: 1, time: "19:00", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
+    { day: 1, time: "22:15", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
+    { day: 1, time: "22:15", boss: "Kzarka",         color: "#ff4040", icon: "./boss-icons/kzarka.png",          active: true },
+    { day: 1, time: "23:15", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+    // Tuesday
+    { day: 2, time: "00:15", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
+    { day: 2, time: "00:15", boss: "Karanda",        color: "#3498db", icon: "./boss-icons/karanda.png",         active: true },
+    { day: 2, time: "12:00", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
+    { day: 2, time: "12:00", boss: "Kutum",          color: "#7a7aff", icon: "./boss-icons/kutum.png",           active: true },
+    { day: 2, time: "14:00", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+    { day: 2, time: "16:00", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
+    { day: 2, time: "16:00", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
+    { day: 2, time: "19:00", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
+    { day: 2, time: "19:00", boss: "Kzarka",         color: "#ff4040", icon: "./boss-icons/kzarka.png",          active: true },
+    { day: 2, time: "22:15", boss: "Quint",          color: "#ffa36c", icon: "./boss-icons/quint.png",           active: true },
+    { day: 2, time: "22:15", boss: "Muraka",         color: "#ffffff", icon: "./boss-icons/muraka.png",          active: true },
+    { day: 2, time: "23:15", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+    // Wednesday
+    { day: 3, time: "00:15", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
+    { day: 3, time: "00:15", boss: "Kzarka",         color: "#ff4040", icon: "./boss-icons/kzarka.png",          active: true },
+    { day: 3, time: "12:00", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
+    { day: 3, time: "12:00", boss: "Karanda",        color: "#3498db", icon: "./boss-icons/karanda.png",         active: true },
+    { day: 3, time: "14:00", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+    { day: 3, time: "16:00", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
+    { day: 3, time: "16:00", boss: "Offin",          color: "#2ecc71", icon: "./boss-icons/offin.png",           active: true },
+    { day: 3, time: "19:00", boss: "Vell",           color: "#2dd4bf", icon: "./boss-icons/vell.png",            active: true },
+    { day: 3, time: "22:15", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
+    { day: 3, time: "22:15", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
+    { day: 3, time: "23:15", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+    // Thursday
+    { day: 4, time: "00:15", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
+    { day: 4, time: "00:15", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
+    { day: 4, time: "02:00", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
+    { day: 4, time: "02:00", boss: "Kzarka",         color: "#ff4040", icon: "./boss-icons/kzarka.png",          active: true },
+    { day: 4, time: "14:00", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+    { day: 4, time: "16:00", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
+    { day: 4, time: "16:00", boss: "Karanda",        color: "#3498db", icon: "./boss-icons/karanda.png",         active: true },
+    { day: 4, time: "19:00", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
+    { day: 4, time: "19:00", boss: "Kutum",          color: "#7a7aff", icon: "./boss-icons/kutum.png",           active: true },
+    { day: 4, time: "22:15", boss: "Quint",          color: "#ffa36c", icon: "./boss-icons/quint.png",           active: true },
+    { day: 4, time: "22:15", boss: "Muraka",         color: "#ffffff", icon: "./boss-icons/muraka.png",          active: true },
+    { day: 4, time: "23:15", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+    // Friday
+    { day: 5, time: "00:15", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
+    { day: 5, time: "00:15", boss: "Karanda",        color: "#3498db", icon: "./boss-icons/karanda.png",         active: true },
+    { day: 5, time: "02:00", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
+    { day: 5, time: "02:00", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
+    { day: 5, time: "12:00", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
+    { day: 5, time: "12:00", boss: "Kutum",          color: "#7a7aff", icon: "./boss-icons/kutum.png",           active: true },
+    { day: 5, time: "14:00", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+    { day: 5, time: "16:00", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
+    { day: 5, time: "16:00", boss: "Kzarka",         color: "#ff4040", icon: "./boss-icons/kzarka.png",          active: true },
+    { day: 5, time: "19:00", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
+    { day: 5, time: "19:00", boss: "Offin",          color: "#2ecc71", icon: "./boss-icons/offin.png",           active: true },
+    { day: 5, time: "22:15", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
+    { day: 5, time: "22:15", boss: "Kutum",          color: "#7a7aff", icon: "./boss-icons/kutum.png",           active: true },
+    { day: 5, time: "23:15", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+    // Saturday
+    { day: 6, time: "00:15", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
+    { day: 6, time: "00:15", boss: "Kzarka",         color: "#ff4040", icon: "./boss-icons/kzarka.png",          active: true },
+    { day: 6, time: "02:00", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
+    { day: 6, time: "02:00", boss: "Offin",          color: "#2ecc71", icon: "./boss-icons/offin.png",           active: true },
+    { day: 6, time: "12:00", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
+    { day: 6, time: "12:00", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
+    { day: 6, time: "14:00", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+    { day: 6, time: "16:00", boss: "Black Shadow",   color: "#ffffff", icon: "./boss-icons/black_shadow.png",    active: true },
+    { day: 6, time: "19:00", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
+    { day: 6, time: "19:00", boss: "Karanda",        color: "#3498db", icon: "./boss-icons/karanda.png",         active: true },
+    // Sunday
+    { day: 7, time: "00:15", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
+    { day: 7, time: "00:15", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
+    { day: 7, time: "02:00", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
+    { day: 7, time: "02:00", boss: "Kutum",          color: "#7a7aff", icon: "./boss-icons/kutum.png",           active: true },
+    { day: 7, time: "12:00", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
+    { day: 7, time: "12:00", boss: "Kzarka",         color: "#ff4040", icon: "./boss-icons/kzarka.png",          active: true },
+    { day: 7, time: "14:00", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+    { day: 7, time: "16:00", boss: "Vell",           color: "#2dd4bf", icon: "./boss-icons/vell.png",            active: true },
+    { day: 7, time: "19:15", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+    { day: 7, time: "22:15", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
+    { day: 7, time: "22:15", boss: "Karanda",        color: "#3498db", icon: "./boss-icons/karanda.png",         active: true },
+    { day: 7, time: "23:15", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+];
+
+function resetToDefault() {
+    if (confirm("Reset to the EU default schedule? This will replace ALL current spawns.")) {
+        pushUndo();
+        schedule = DEFAULT_SCHEDULE.map(e => ({ ...e }));
+        localStorage.setItem("bdoCustomSchedule", JSON.stringify(schedule));
+        renderTable();
+        alert("Schedule reset to EU defaults.");
+    }
+}
+
+const dayNames = {
+    1: "Monday", 2: "Tuesday", 3: "Wednesday", 4: "Thursday",
+    5: "Friday", 6: "Saturday", 7: "Sunday"
+};
+
+// ====================== RENDER GROUPED TABLE ======================
+function renderTable() {
+    const tbody = document.querySelector("#scheduleTable tbody");
+    tbody.innerHTML = "";
+
+    const groups = {};
+
+    schedule.forEach((entry, index) => {
+        if (!groups[entry.boss]) {
+            groups[entry.boss] = {
+                boss: entry.boss,
+                color: entry.color,
+                icon: entry.icon,
+                active: true,
+                spawns: [],
+                indices: []
+            };
+        }
+        groups[entry.boss].spawns.push({
+            day: entry.day,
+            time: entry.time,
+            active: entry.active,
+            index: index
+        });
+        groups[entry.boss].indices.push(index);
+
+        if (!entry.active) groups[entry.boss].active = false;
+    });
+
+    Object.values(groups).forEach(group => {
+        // Main boss row
+        const bossRow = document.createElement("tr");
+        bossRow.className = "boss-row";
+        bossRow.innerHTML = `
+            <td><input type="checkbox" ${group.active ? "checked" : ""} onchange="toggleBossActive('${group.boss}', this.checked)"></td>
+            <td><strong>${group.boss}</strong></td>
+            <td><img src="${group.icon}" class="icon-preview"></td>
+            <td><input type="color" value="${group.color}" class="editable-color" onchange="updateBossColor('${group.boss}', this.value)"></td>
+            <td><button onclick="deleteBoss('${group.boss}')" style="background:#ff4040;padding:6px 12px;">Delete Boss</button></td>
+        `;
+        tbody.appendChild(bossRow);
+
+        // Collapsible spawn details
+        const detailRow = document.createElement("tr");
+        detailRow.className = "spawn-row";
+        detailRow.style.display = "none";
+
+        let html = `<td colspan="5" style="padding:0;">
+            <div style="padding:15px 20px;">
+                <strong>Spawns for ${group.boss}:</strong><br><br>`;
+
+        group.spawns.forEach(spawn => {
+            html += `
+                <div style="margin:8px 0;">
+                    <input type="checkbox" ${spawn.active ? "checked" : ""} 
+                           onchange="toggleSingleSpawn(${spawn.index}, this.checked)">
+                    <strong>${dayNames[spawn.day] || 'Day '+spawn.day}</strong> at ${spawn.time}
+                </div>`;
+        });
+
+        html += `</div></td>`;
+        detailRow.innerHTML = html;
+        tbody.appendChild(detailRow);
+
+        // Click to toggle collapse (ignore clicks on inputs/buttons)
+        bossRow.addEventListener("click", (e) => {
+            if (e.target.tagName === "INPUT" || e.target.tagName === "BUTTON") return;
+            detailRow.style.display = detailRow.style.display === "none" ? "table-row" : "none";
+        });
+    });
+}
+
+// Toggle entire boss
+function toggleBossActive(bossName, isActive) {
+    pushUndo();
+    schedule.forEach(entry => {
+        if (entry.boss === bossName) entry.active = isActive;
+    });
+    localStorage.setItem("bdoCustomSchedule", JSON.stringify(schedule));
+    renderTable();
+}
+
+// Toggle single spawn
+function toggleSingleSpawn(index, isActive) {
+    pushUndo();
+    schedule[index].active = isActive;
+    localStorage.setItem("bdoCustomSchedule", JSON.stringify(schedule));
+}
+
+// Update boss color (all spawns of that boss)
+function updateBossColor(bossName, newColor) {
+    pushUndo();
+    schedule.forEach(entry => {
+        if (entry.boss === bossName) entry.color = newColor;
+    });
+    localStorage.setItem("bdoCustomSchedule", JSON.stringify(schedule));
+    renderTable();
+}
+
+// Delete entire boss
+function deleteBoss(bossName) {
+    if (confirm(`Delete ALL spawns for "${bossName}"?`)) {
+        pushUndo();
+        schedule = schedule.filter(entry => entry.boss !== bossName);
+        localStorage.setItem("bdoCustomSchedule", JSON.stringify(schedule));
+        renderTable();
+    }
+}
+
+// ====================== ADD FUNCTIONS ======================
+async function saveAllSpawns() {
+    const name = document.getElementById("bossName").value.trim();
+    const color = document.getElementById("bossColor").value;
+
+    if (!name) {
+        alert("Please enter a boss name");
+        return;
+    }
+
+    const dayContainers = document.querySelectorAll(".day-container");
+    if (dayContainers.length === 0) {
+        alert("Please add at least one day");
+        return;
+    }
+
+    let iconBase64 = "./boss-icons/gift_box.png";
+
+    const file = document.getElementById("bossIcon").files[0];
+    if (file) {
+        iconBase64 = await new Promise(r => {
+            const reader = new FileReader();
+            reader.onload = e => r(e.target.result);
+            reader.readAsDataURL(file);
+        });
+    }
+
+    let addedCount = 0;
+
+    dayContainers.forEach(dayDiv => {
+        const day = parseInt(dayDiv.querySelector(".day-select").value);
+        const timeInputs = dayDiv.querySelectorAll(".time-input");
+
+        timeInputs.forEach(input => {
+            const time = input.value.trim();
+            if (time) {
+                schedule.push({
+                    day: day,
+                    time: time,
+                    boss: name,
+                    color: color,
+                    icon: iconBase64,
+                    active: true
+                });
+                addedCount++;
+            }
+        });
+    });
+
+    if (addedCount === 0) {
+        alert("No valid times were added");
+        return;
+    }
+
+    pushUndo();
+    schedule.sort((a, b) => a.day - b.day || a.time.localeCompare(b.time));
+    localStorage.setItem("bdoCustomSchedule", JSON.stringify(schedule));
+    renderTable();
+
+    alert(`Successfully added ${addedCount} spawns for "${name}"`);
+
+    document.getElementById("dayContainers").innerHTML = "";
+    dayCounter = 0;
+    addDayContainer(1);
+}
+
+let dayCounter = 0;
+
+function addDayContainer(defaultDay = 1) {
+    dayCounter++;
+    const container = document.getElementById("dayContainers");
+
+    const dayDiv = document.createElement("div");
+    dayDiv.className = "day-container";
+    dayDiv.id = `day-${dayCounter}`;
+
+    dayDiv.innerHTML = `
+        <div class="day-header">
+            <select class="day-select">
+                <option value="1" ${defaultDay===1 ? 'selected' : ''}>1 - Monday</option>
+                <option value="2" ${defaultDay===2 ? 'selected' : ''}>2 - Tuesday</option>
+                <option value="3" ${defaultDay===3 ? 'selected' : ''}>3 - Wednesday</option>
+                <option value="4" ${defaultDay===4 ? 'selected' : ''}>4 - Thursday</option>
+                <option value="5" ${defaultDay===5 ? 'selected' : ''}>5 - Friday</option>
+                <option value="6" ${defaultDay===6 ? 'selected' : ''}>6 - Saturday</option>
+                <option value="7" ${defaultDay===7 ? 'selected' : ''}>7 - Sunday</option>
+            </select>
+            <button class="remove-day" onclick="removeDayContainer(this)">🗑️</button>
+        </div>
+        <div class="time-list" id="times-${dayCounter}"></div>
+        <button onclick="addTimeField(${dayCounter})" style="margin-top:10px;">+ Add Time</button>
+    `;
+
+    container.appendChild(dayDiv);
+    addTimeField(dayCounter);
+}
+
+function removeDayContainer(btn) {
+    if (confirm("Delete this entire day and all its times?")) {
+        btn.closest(".day-container").remove();
+    }
+}
+
+function addTimeField(dayId) {
+    const timeList = document.getElementById(`times-${dayId}`);
+    const timeRow = document.createElement("div");
+    timeRow.className = "time-row";
+    timeRow.innerHTML = `
+        <input type="time" class="time-input">
+        <button class="remove-time" onclick="this.parentElement.remove()">🗑️</button>
+    `;
+    timeList.appendChild(timeRow);
+    timeRow.querySelector("input[type='time']").focus();
+}
+
+function resetTimerLocation() {
+    localStorage.setItem("bossTimerPosition", JSON.stringify({ left: 50, top: 50 }));
+    alert("Timer location reset to (50, 50). It will reposition next time you open the timer.");
+}
+
+
+addDayContainer(1);
+renderTable();
+updateUndoButton();
+
+document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "z") {
+        e.preventDefault();
+        undo();
+    }
+});
+</script>
+</body>
+</html>
