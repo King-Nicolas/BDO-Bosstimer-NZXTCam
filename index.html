@@ -8,8 +8,7 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
 
-        body,
-        html {
+        body, html {
             margin: 0;
             padding: 0;
             background: #0f0f0f;
@@ -124,7 +123,7 @@
             border-radius: 8px;
             padding: 12px 14px;
             z-index: 20;
-            min-width: 190px;
+            min-width: 200px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.7);
             opacity: 0;
             pointer-events: none;
@@ -159,6 +158,29 @@
             padding: 4px 8px;
             font-size: 13px;
             box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+
+        .flash-toggle-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .flash-toggle-row label {
+            margin: 0;
+            color: #ccc;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .flash-toggle-row input[type="checkbox"] {
+            accent-color: #49c57a;
+            cursor: pointer;
+            width: 13px;
+            height: 13px;
+            margin: 0;
         }
 
         #position-label {
@@ -166,7 +188,10 @@
             top: -20px;
             left: 0;
             right: 0;
-            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
             font-size: 10px;
             color: #fff;
             font-family: 'Roboto', sans-serif;
@@ -181,19 +206,7 @@
             pointer-events: auto;
         }
 
-        #position-label {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            font-size: 10px;
-            color: #fff;
-            font-family: 'Roboto', sans-serif;
-        }
-
-        #position-label span {
-            color: #888;
-        }
+        #position-label span { color: #888; }
 
         #position-label input {
             width: 46px;
@@ -206,12 +219,13 @@
             padding: 1px 4px;
             text-align: center;
             -moz-appearance: textfield;
+            user-select: text;
+            -webkit-user-select: text;
+            -moz-user-select: text;
         }
 
         #position-label input::-webkit-outer-spin-button,
-        #position-label input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-        }
+        #position-label input::-webkit-inner-spin-button { -webkit-appearance: none; }
 
         #position-label input:focus {
             outline: 1px solid #49c57a;
@@ -224,12 +238,6 @@
             -webkit-user-select: none;
             -moz-user-select: none;
             -ms-user-select: none;
-        }
-
-        #position-label input {
-            user-select: text;
-            -webkit-user-select: text;
-            -moz-user-select: text;
         }
     </style>
 </head>
@@ -253,7 +261,7 @@
     </div>
 
     <script>
-        /* ── Default EU boss schedule (used to seed localStorage on first load) ──────── */
+        /* ── Default EU boss schedule ────────────────────────────────────────────────── */
         const DEFAULT_SCHEDULE = [
             // Monday
             { day: 1, time: "00:15", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
@@ -349,18 +357,59 @@
             { day: 7, time: "23:15", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
         ];
 
-        /* ── Load schedule from localStorage, seeding defaults on first run ─────────── */
+        /* ── Load schedule from localStorage ────────────────────────────────────────── */
         if (!localStorage.getItem("bdoCustomSchedule")) {
             localStorage.setItem("bdoCustomSchedule", JSON.stringify(DEFAULT_SCHEDULE));
         }
         let schedule = JSON.parse(localStorage.getItem("bdoCustomSchedule"));
 
         /* ── Flash settings (persisted) ─────────────────────────────────────────────── */
-        let flashIntensity = parseFloat(localStorage.getItem("flashIntensity") ?? "0.18");
-        let flashCountdown = parseInt(localStorage.getItem("flashCountdown") ?? "10", 10);
+        let flashIntensity  = parseFloat(localStorage.getItem("flashIntensity")  ?? "0.18");
+        let flashCountdown  = parseInt(localStorage.getItem("flashCountdown")    ?? "10", 10);
+        let flashColorMode  = localStorage.getItem("flashColorMode") === "true";
         document.documentElement.style.setProperty("--flash-intensity", flashIntensity);
 
-        /* next bosses calculation — groups active entries by day+time slot */
+        /* ── Color flash state ───────────────────────────────────────────────────────── */
+        let colorFlashInterval = null;
+        let colorFlashColors   = [];
+        let colorFlashIndex    = 0;
+
+        function startColorFlash(colors) {
+            // Only restart if the color set changed
+            const colorsKey = colors.join(",");
+            if (colorFlashInterval && colorFlashColors.join(",") === colorsKey) return;
+
+            stopColorFlash();
+            colorFlashColors = colors;
+            colorFlashIndex  = 0;
+
+            const overlay = document.getElementById("flash-overlay");
+
+            function applyNextColor() {
+                const color = colorFlashColors[colorFlashIndex % colorFlashColors.length];
+                overlay.style.background = color;
+                colorFlashIndex++;
+            }
+
+            applyNextColor();
+            overlay.classList.add("flashing");
+            // Switch color every full pulse cycle (1s = one pulse)
+            colorFlashInterval = setInterval(applyNextColor, 1000);
+        }
+
+        function stopColorFlash() {
+            if (colorFlashInterval) {
+                clearInterval(colorFlashInterval);
+                colorFlashInterval = null;
+            }
+            colorFlashColors = [];
+            colorFlashIndex  = 0;
+            const overlay = document.getElementById("flash-overlay");
+            overlay.style.background = "white";
+            overlay.classList.remove("flashing");
+        }
+
+        /* ── Boss calculation ────────────────────────────────────────────────────────── */
         function getNextBosses() {
             const now = new Date();
             const currentDay = now.getDay() || 7;
@@ -386,7 +435,6 @@
             return candidates.slice(0, 5);
         }
 
-        /* render boss icons */
         function renderBossIcons(entries) {
             const container = document.getElementById("boss-icons");
             container.innerHTML = "";
@@ -400,13 +448,14 @@
             });
         }
 
-        /* update timer */
+        /* ── Main update loop ────────────────────────────────────────────────────────── */
         function update() {
             schedule = JSON.parse(localStorage.getItem("bdoCustomSchedule")) || [];
             const next = getNextBosses();
             if (!next.length) {
                 document.getElementById("boss-names").innerHTML =
                     `<span style="color:#888">No active spawns — <a href="./editor.html" style="color:#49c57a">open editor</a></span>`;
+                stopColorFlash();
                 return;
             }
             const current = next[0];
@@ -428,19 +477,28 @@
             ).join(" | ");
             document.getElementById("boss-names").innerHTML = names;
 
-            // Flash background in last N seconds
+            // Flash logic
             const overlay = document.getElementById("flash-overlay");
             if (seconds <= flashCountdown && seconds > 0) {
-                overlay.classList.add("flashing");
+                if (flashColorMode && current.entries.length > 0) {
+                    // Color flash: cycle through boss colors left→right
+                    const colors = current.entries.map(e => e.color || "#ffffff");
+                    startColorFlash(colors);
+                } else {
+                    // White flash
+                    stopColorFlash();
+                    overlay.style.background = "white";
+                    overlay.classList.add("flashing");
+                }
             } else {
-                overlay.classList.remove("flashing");
+                stopColorFlash();
             }
         }
 
         setInterval(update, 1000);
         update();
 
-        /* ── Dragging logic with persistence ────────────────────────────────────────── */
+        /* ── Dragging ────────────────────────────────────────────────────────────────── */
         const wrapper = document.getElementById("scale-wrapper");
         let isDragging = false;
         let offsetX, offsetY;
@@ -448,10 +506,10 @@
         let savedPos = JSON.parse(localStorage.getItem("bossTimerPosition"));
         if (savedPos) {
             wrapper.style.left = savedPos.left + "px";
-            wrapper.style.top = savedPos.top + "px";
+            wrapper.style.top  = savedPos.top  + "px";
         } else {
             wrapper.style.left = "50px";
-            wrapper.style.top = "50px";
+            wrapper.style.top  = "50px";
         }
 
         function updatePositionLabel() {
@@ -467,7 +525,6 @@
             updatePositionLabel();
         }
 
-        // Commit position when user edits an input
         ["pos-x", "pos-y"].forEach(id => {
             const input = document.getElementById(id);
             input.addEventListener("change", () => {
@@ -475,10 +532,8 @@
                 const y = parseInt(document.getElementById("pos-y").value, 10) || 0;
                 applyPosition(x, y);
             });
-            // Prevent drag starting when clicking into inputs
             input.addEventListener("mousedown", e => e.stopPropagation());
-            // Allow typing freely
-            input.addEventListener("keydown", e => e.stopPropagation());
+            input.addEventListener("keydown",   e => e.stopPropagation());
         });
 
         wrapper.addEventListener("mousedown", (e) => {
@@ -493,7 +548,7 @@
         document.addEventListener("mousemove", (e) => {
             if (!isDragging) return;
             wrapper.style.left = (e.clientX - offsetX) + "px";
-            wrapper.style.top = (e.clientY - offsetY) + "px";
+            wrapper.style.top  = (e.clientY - offsetY) + "px";
             updatePositionLabel();
         });
 
@@ -501,59 +556,46 @@
             if (isDragging) {
                 localStorage.setItem("bossTimerPosition", JSON.stringify({
                     left: wrapper.offsetLeft,
-                    top: wrapper.offsetTop
+                    top:  wrapper.offsetTop
                 }));
             }
             isDragging = false;
             wrapper.style.cursor = "move";
         });
 
-        /* ── Scaling logic with persistence ─────────────────────────────────────────── */
+        /* ── Scaling ─────────────────────────────────────────────────────────────────── */
         const handle = document.getElementById("scale-handle");
         let isScaling = false;
         let startX, startY, startScale = 1;
         const containerEl = wrapper.querySelector(".container");
-        const minWidth = 50;
-        const minHeight = 50;
+        const minWidth = 50, minHeight = 50;
 
         let savedScale = localStorage.getItem("bossTimerScale");
-        if (savedScale) {
-            wrapper.style.transform = `scale(${savedScale})`;
-        }
+        if (savedScale) wrapper.style.transform = `scale(${savedScale})`;
 
         handle.addEventListener("mousedown", (e) => {
             e.stopPropagation();
             isScaling = true;
             startX = e.clientX;
             startY = e.clientY;
-            const style = window.getComputedStyle(wrapper);
-            const transform = style.transform || "none";
-            startScale = transform !== "none" && transform !== "matrix(1, 0, 0, 1, 0, 0)"
-                ? parseFloat(transform.split('(')[1].split(')')[0].split(',')[0])
-                : 1;
+            const t = window.getComputedStyle(wrapper).transform;
+            startScale = (t && t !== "none" && t !== "matrix(1, 0, 0, 1, 0, 0)")
+                ? parseFloat(t.split("(")[1].split(")")[0].split(",")[0]) : 1;
         });
 
         document.addEventListener("mousemove", (e) => {
             if (!isScaling) return;
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-            const delta = Math.max(dx, dy) * 0.01;
-            let newScale = startScale + delta;
-
-            const scaledWidth = containerEl.offsetWidth * newScale;
-            const scaledHeight = containerEl.offsetHeight * newScale;
-            if (scaledWidth < minWidth) newScale = minWidth / containerEl.offsetWidth;
-            if (scaledHeight < minHeight) newScale = minHeight / containerEl.offsetHeight;
-
-            wrapper.style.transform = `scale(${newScale})`;
-            localStorage.setItem("bossTimerScale", newScale);
+            const delta = Math.max(e.clientX - startX, e.clientY - startY) * 0.01;
+            let s = startScale + delta;
+            if (containerEl.offsetWidth  * s < minWidth)  s = minWidth  / containerEl.offsetWidth;
+            if (containerEl.offsetHeight * s < minHeight) s = minHeight / containerEl.offsetHeight;
+            wrapper.style.transform = `scale(${s})`;
+            localStorage.setItem("bossTimerScale", s);
         });
 
-        document.addEventListener("mouseup", () => {
-            isScaling = false;
-        });
+        document.addEventListener("mouseup", () => { isScaling = false; });
 
-        /* ── Controls visibility timeout ─────────────────────────────────────────────── */
+        /* ── Controls visibility ─────────────────────────────────────────────────────── */
         let controlsTimer = null;
         let countdownInterval = null;
         const CONTROLS_HIDE_DELAY = 10000;
@@ -603,35 +645,22 @@
             startCountdownTick(CONTROLS_HIDE_DELAY / 1000);
         }
 
-        /* ── Build controls: editor link + gear button + settings panel ─────────────── */
+        /* ── Build controls ──────────────────────────────────────────────────────────── */
         const toggleContainer = document.createElement("div");
         toggleContainer.id = "toggle-controls";
         toggleContainer.style.cssText = `
-            position: absolute;
-            top: 6px;
-            right: 8px;
-            z-index: 15;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
+            position: absolute; top: 6px; right: 8px; z-index: 15;
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
         `;
 
         const btnStyle = `
-            width: 28px;
-            height: 28px;
+            width: 28px; height: 28px;
             background: rgba(73, 197, 122, 0.18);
-            border-radius: 8px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            text-decoration: none;
-            transition: background 0.18s;
+            border-radius: 8px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; text-decoration: none; transition: background 0.18s;
         `;
 
-        // Editor link
         const editorLink = document.createElement("a");
         editorLink.href = "./editor.html";
         editorLink.title = "Open Schedule Editor";
@@ -640,7 +669,6 @@
         editorLink.addEventListener("mouseenter", () => editorLink.style.background = "rgba(73, 197, 122, 0.35)");
         editorLink.addEventListener("mouseleave", () => editorLink.style.background = "rgba(73, 197, 122, 0.18)");
 
-        // Gear button
         const gearBtn = document.createElement("div");
         gearBtn.title = "Flash settings";
         gearBtn.style.cssText = btnStyle;
@@ -653,7 +681,7 @@
         wrapper.appendChild(toggleContainer);
         wrapper.appendChild(hideCountdown);
 
-        // Settings panel
+        /* ── Settings panel ──────────────────────────────────────────────────────────── */
         const settingsPanel = document.createElement("div");
         settingsPanel.id = "flash-settings";
         settingsPanel.innerHTML = `
@@ -661,10 +689,13 @@
             <input type="range" id="flashIntensitySlider" min="0" max="1" step="0.01" value="${flashIntensity}">
             <label>Flash starts at (seconds before spawn)</label>
             <input type="number" id="flashCountdownInput" min="1" max="300" value="${flashCountdown}">
+            <div class="flash-toggle-row">
+                <input type="checkbox" id="flashColorToggle" ${flashColorMode ? "checked" : ""}>
+                <label for="flashColorToggle">Flash in boss colors</label>
+            </div>
         `;
         wrapper.appendChild(settingsPanel);
 
-        // Wire up settings inputs
         settingsPanel.querySelector("#flashIntensitySlider").addEventListener("input", (e) => {
             flashIntensity = parseFloat(e.target.value);
             document.documentElement.style.setProperty("--flash-intensity", flashIntensity);
@@ -679,31 +710,31 @@
             }
         });
 
-        // Gear button toggles settings panel, with hover-out delay
-        let settingsHideTimer = null;
+        settingsPanel.querySelector("#flashColorToggle").addEventListener("change", (e) => {
+            flashColorMode = e.target.checked;
+            localStorage.setItem("flashColorMode", flashColorMode);
+            if (!flashColorMode) stopColorFlash();
+        });
 
+        let settingsHideTimer = null;
         function showSettings() {
             settingsPanel.classList.add("visible");
             if (settingsHideTimer) clearTimeout(settingsHideTimer);
         }
-
         function scheduleHideSettings() {
             settingsHideTimer = setTimeout(() => settingsPanel.classList.remove("visible"), 400);
         }
-
         gearBtn.addEventListener("mouseenter", showSettings);
         gearBtn.addEventListener("mouseleave", scheduleHideSettings);
         settingsPanel.addEventListener("mouseenter", () => { if (settingsHideTimer) clearTimeout(settingsHideTimer); });
         settingsPanel.addEventListener("mouseleave", scheduleHideSettings);
-
-        // Prevent settings panel inputs from triggering drag
         settingsPanel.addEventListener("mousedown", (e) => e.stopPropagation());
 
-        /* ── Interaction & hover logic ──────────────────────────────────────────────── */
-        wrapper.addEventListener("mouseenter", showControls);
-        wrapper.addEventListener("mouseleave", resetControlsTimer);
-        wrapper.addEventListener("mousedown", showControls);
-        handle.addEventListener("mousedown", showControls);
+        /* ── Hover / interaction ─────────────────────────────────────────────────────── */
+        wrapper.addEventListener("mouseenter",  showControls);
+        wrapper.addEventListener("mouseleave",  resetControlsTimer);
+        wrapper.addEventListener("mousedown",   showControls);
+        handle.addEventListener("mousedown",    showControls);
     </script>
 </body>
 
