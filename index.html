@@ -472,6 +472,16 @@
                 String(m).padStart(2, "0") + ":" +
                 String(s).padStart(2, "0");
 
+            // Color the countdown based on time remaining
+            const countdownEl = document.getElementById("countdown");
+            if (seconds <= 300) {
+                countdownEl.style.color = "#ff1a1a";
+            } else if (seconds <= 600) {
+                countdownEl.style.color = "#ff8000";
+            } else {
+                countdownEl.style.color = "#49c57a";
+            }
+
             const names = current.entries.map(entry =>
                 `<span style="color:${entry.color || "#fff"}">${entry.boss}</span>`
             ).join(" | ");
