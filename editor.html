@@ -168,6 +168,77 @@
     .tooltip-anchor:hover .tooltip-box {
         display: block;
     }
+
+    /* ── Spawn Rules Tabs ── */
+    .tab-bar {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #333;
+    }
+
+    .tab-btn {
+        background: none;
+        border: none;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+        color: #888;
+        font-size: 14px;
+        font-weight: 500;
+        padding: 8px 18px;
+        cursor: pointer;
+        border-radius: 6px 6px 0 0;
+        transition: color 0.15s, background 0.15s;
+    }
+
+    .tab-btn:hover { color: #ccc; background: #222; }
+
+    .tab-btn.active {
+        color: #49c57a;
+        border-bottom-color: #49c57a;
+        background: none;
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Bulk Add */
+    .day-checkboxes {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+    .day-checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: #2a2a2a;
+        border: 1px solid #444;
+        border-radius: 6px;
+        padding: 6px 12px;
+        cursor: pointer;
+        font-size: 13px;
+        transition: border-color 0.15s, background 0.15s;
+        user-select: none;
+    }
+
+    .day-checkbox-label:has(input:checked) {
+        border-color: #49c57a;
+        background: #1a2e22;
+        color: #49c57a;
+    }
+
+    .day-checkbox-label input[type="checkbox"] {
+        accent-color: #49c57a;
+        width: 14px;
+        height: 14px;
+        cursor: pointer;
+        padding: 0;
+    }
+
+    .bulk-time-list { margin-bottom: 10px; }
 </style>
 </head>
 <body>
@@ -198,10 +269,40 @@
     <!-- Spawn Rules -->
     <div class="boss-form">
         <h2>2. Spawn Rules</h2>
-        <div id="dayContainers"></div>
-        
-        <div style="text-align:center; margin-top:25px;">
-            <button onclick="addDayContainer()">+ Add New Day</button>
+
+        <div class="tab-bar">
+            <button class="tab-btn active" onclick="switchTab('byDay')">By Day</button>
+            <button class="tab-btn"        onclick="switchTab('bulk')">Bulk Add</button>
+        </div>
+
+        <!-- Tab: By Day -->
+        <div id="tab-byDay" class="tab-panel active">
+            <div id="dayContainers"></div>
+            <div style="text-align:center; margin-top:25px;">
+                <button onclick="addDayContainer()">+ Add New Day</button>
+            </div>
+        </div>
+
+        <!-- Tab: Bulk Add -->
+        <div id="tab-bulk" class="tab-panel">
+            <label style="display:block; font-weight:500; margin-bottom:10px;">Select days</label>
+            <div class="day-checkboxes">
+                <label class="day-checkbox-label"><input type="checkbox" class="bulk-day" value="1"> Monday</label>
+                <label class="day-checkbox-label"><input type="checkbox" class="bulk-day" value="2"> Tuesday</label>
+                <label class="day-checkbox-label"><input type="checkbox" class="bulk-day" value="3"> Wednesday</label>
+                <label class="day-checkbox-label"><input type="checkbox" class="bulk-day" value="4"> Thursday</label>
+                <label class="day-checkbox-label"><input type="checkbox" class="bulk-day" value="5"> Friday</label>
+                <label class="day-checkbox-label"><input type="checkbox" class="bulk-day" value="6"> Saturday</label>
+                <label class="day-checkbox-label"><input type="checkbox" class="bulk-day" value="7"> Sunday</label>
+            </div>
+            <div style="margin-bottom:16px; display:flex; gap:10px;">
+                <button onclick="bulkSelectAll()" style="padding:6px 14px; font-size:13px;">Select All</button>
+                <button onclick="bulkClearAll()" style="padding:6px 14px; font-size:13px; background:#2a2a2a; color:#aaa; border:1px solid #444;">Clear</button>
+            </div>
+
+            <label style="display:block; font-weight:500; margin-bottom:10px;">Times</label>
+            <div class="bulk-time-list" id="bulkTimeList"></div>
+            <button onclick="addBulkTimeField()" style="margin-top:4px;">+ Add Time</button>
         </div>
     </div>
 
@@ -278,97 +379,97 @@ function updateUndoButton() {
 
 const DEFAULT_SCHEDULE = [
     // Monday
-    { day: 1, time: "00:15", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
-    { day: 1, time: "00:15", boss: "Kutum",          color: "#7a7aff", icon: "./boss-icons/kutum.png",           active: true },
-    { day: 1, time: "02:00", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
-    { day: 1, time: "02:00", boss: "Karanda",        color: "#3498db", icon: "./boss-icons/karanda.png",         active: true },
-    { day: 1, time: "12:00", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
-    { day: 1, time: "12:00", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
-    { day: 1, time: "14:00", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
-    { day: 1, time: "16:00", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
-    { day: 1, time: "16:00", boss: "Kutum",          color: "#7a7aff", icon: "./boss-icons/kutum.png",           active: true },
-    { day: 1, time: "19:00", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
-    { day: 1, time: "19:00", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
-    { day: 1, time: "22:15", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
-    { day: 1, time: "22:15", boss: "Kzarka",         color: "#ff4040", icon: "./boss-icons/kzarka.png",          active: true },
-    { day: 1, time: "23:15", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+    { day: 1, time: "23:15", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
+    { day: 1, time: "23:15", boss: "Kutum",          color: "#7a7aff", icon: "./boss-icons/kutum.png",           active: true },
+    { day: 1, time: "01:00", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
+    { day: 1, time: "01:00", boss: "Karanda",        color: "#3498db", icon: "./boss-icons/karanda.png",         active: true },
+    { day: 1, time: "11:00", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
+    { day: 1, time: "11:00", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
+    { day: 1, time: "13:00", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+    { day: 1, time: "15:00", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
+    { day: 1, time: "15:00", boss: "Kutum",          color: "#7a7aff", icon: "./boss-icons/kutum.png",           active: true },
+    { day: 1, time: "18:00", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
+    { day: 1, time: "18:00", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
+    { day: 1, time: "21:15", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
+    { day: 1, time: "21:15", boss: "Kzarka",         color: "#ff4040", icon: "./boss-icons/kzarka.png",          active: true },
+    { day: 1, time: "22:15", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
     // Tuesday
-    { day: 2, time: "00:15", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
-    { day: 2, time: "00:15", boss: "Karanda",        color: "#3498db", icon: "./boss-icons/karanda.png",         active: true },
-    { day: 2, time: "12:00", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
-    { day: 2, time: "12:00", boss: "Kutum",          color: "#7a7aff", icon: "./boss-icons/kutum.png",           active: true },
-    { day: 2, time: "14:00", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
-    { day: 2, time: "16:00", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
-    { day: 2, time: "16:00", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
-    { day: 2, time: "19:00", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
-    { day: 2, time: "19:00", boss: "Kzarka",         color: "#ff4040", icon: "./boss-icons/kzarka.png",          active: true },
-    { day: 2, time: "22:15", boss: "Quint",          color: "#ffa36c", icon: "./boss-icons/quint.png",           active: true },
-    { day: 2, time: "22:15", boss: "Muraka",         color: "#ffffff", icon: "./boss-icons/muraka.png",          active: true },
-    { day: 2, time: "23:15", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+    { day: 2, time: "23:15", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
+    { day: 2, time: "23:15", boss: "Karanda",        color: "#3498db", icon: "./boss-icons/karanda.png",         active: true },
+    { day: 2, time: "11:00", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
+    { day: 2, time: "11:00", boss: "Kutum",          color: "#7a7aff", icon: "./boss-icons/kutum.png",           active: true },
+    { day: 2, time: "13:00", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+    { day: 2, time: "15:00", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
+    { day: 2, time: "15:00", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
+    { day: 2, time: "18:00", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
+    { day: 2, time: "18:00", boss: "Kzarka",         color: "#ff4040", icon: "./boss-icons/kzarka.png",          active: true },
+    { day: 2, time: "21:15", boss: "Quint",          color: "#ffa36c", icon: "./boss-icons/quint.png",           active: true },
+    { day: 2, time: "21:15", boss: "Muraka",         color: "#ffffff", icon: "./boss-icons/muraka.png",          active: true },
+    { day: 2, time: "22:15", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
     // Wednesday
-    { day: 3, time: "00:15", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
-    { day: 3, time: "00:15", boss: "Kzarka",         color: "#ff4040", icon: "./boss-icons/kzarka.png",          active: true },
-    { day: 3, time: "12:00", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
-    { day: 3, time: "12:00", boss: "Karanda",        color: "#3498db", icon: "./boss-icons/karanda.png",         active: true },
-    { day: 3, time: "14:00", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
-    { day: 3, time: "16:00", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
-    { day: 3, time: "16:00", boss: "Offin",          color: "#2ecc71", icon: "./boss-icons/offin.png",           active: true },
-    { day: 3, time: "19:00", boss: "Vell",           color: "#2dd4bf", icon: "./boss-icons/vell.png",            active: true },
-    { day: 3, time: "22:15", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
-    { day: 3, time: "22:15", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
-    { day: 3, time: "23:15", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+    { day: 3, time: "23:15", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
+    { day: 3, time: "23:15", boss: "Kzarka",         color: "#ff4040", icon: "./boss-icons/kzarka.png",          active: true },
+    { day: 3, time: "11:00", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
+    { day: 3, time: "11:00", boss: "Karanda",        color: "#3498db", icon: "./boss-icons/karanda.png",         active: true },
+    { day: 3, time: "13:00", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+    { day: 3, time: "15:00", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
+    { day: 3, time: "15:00", boss: "Offin",          color: "#2ecc71", icon: "./boss-icons/offin.png",           active: true },
+    { day: 3, time: "18:00", boss: "Vell",           color: "#2dd4bf", icon: "./boss-icons/vell.png",            active: true },
+    { day: 3, time: "21:15", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
+    { day: 3, time: "21:15", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
+    { day: 3, time: "22:15", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
     // Thursday
-    { day: 4, time: "00:15", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
-    { day: 4, time: "00:15", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
-    { day: 4, time: "02:00", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
-    { day: 4, time: "02:00", boss: "Kzarka",         color: "#ff4040", icon: "./boss-icons/kzarka.png",          active: true },
-    { day: 4, time: "14:00", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
-    { day: 4, time: "16:00", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
-    { day: 4, time: "16:00", boss: "Karanda",        color: "#3498db", icon: "./boss-icons/karanda.png",         active: true },
-    { day: 4, time: "19:00", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
-    { day: 4, time: "19:00", boss: "Kutum",          color: "#7a7aff", icon: "./boss-icons/kutum.png",           active: true },
-    { day: 4, time: "22:15", boss: "Quint",          color: "#ffa36c", icon: "./boss-icons/quint.png",           active: true },
-    { day: 4, time: "22:15", boss: "Muraka",         color: "#ffffff", icon: "./boss-icons/muraka.png",          active: true },
-    { day: 4, time: "23:15", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+    { day: 4, time: "23:15", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
+    { day: 4, time: "23:15", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
+    { day: 4, time: "01:00", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
+    { day: 4, time: "01:00", boss: "Kzarka",         color: "#ff4040", icon: "./boss-icons/kzarka.png",          active: true },
+    { day: 4, time: "13:00", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+    { day: 4, time: "15:00", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
+    { day: 4, time: "15:00", boss: "Karanda",        color: "#3498db", icon: "./boss-icons/karanda.png",         active: true },
+    { day: 4, time: "18:00", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
+    { day: 4, time: "18:00", boss: "Kutum",          color: "#7a7aff", icon: "./boss-icons/kutum.png",           active: true },
+    { day: 4, time: "21:15", boss: "Quint",          color: "#ffa36c", icon: "./boss-icons/quint.png",           active: true },
+    { day: 4, time: "21:15", boss: "Muraka",         color: "#ffffff", icon: "./boss-icons/muraka.png",          active: true },
+    { day: 4, time: "22:15", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
     // Friday
-    { day: 5, time: "00:15", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
-    { day: 5, time: "00:15", boss: "Karanda",        color: "#3498db", icon: "./boss-icons/karanda.png",         active: true },
-    { day: 5, time: "02:00", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
-    { day: 5, time: "02:00", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
-    { day: 5, time: "12:00", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
-    { day: 5, time: "12:00", boss: "Kutum",          color: "#7a7aff", icon: "./boss-icons/kutum.png",           active: true },
-    { day: 5, time: "14:00", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
-    { day: 5, time: "16:00", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
-    { day: 5, time: "16:00", boss: "Kzarka",         color: "#ff4040", icon: "./boss-icons/kzarka.png",          active: true },
-    { day: 5, time: "19:00", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
-    { day: 5, time: "19:00", boss: "Offin",          color: "#2ecc71", icon: "./boss-icons/offin.png",           active: true },
-    { day: 5, time: "22:15", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
-    { day: 5, time: "22:15", boss: "Kutum",          color: "#7a7aff", icon: "./boss-icons/kutum.png",           active: true },
-    { day: 5, time: "23:15", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+    { day: 5, time: "23:15", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
+    { day: 5, time: "23:15", boss: "Karanda",        color: "#3498db", icon: "./boss-icons/karanda.png",         active: true },
+    { day: 5, time: "01:00", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
+    { day: 5, time: "01:00", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
+    { day: 5, time: "11:00", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
+    { day: 5, time: "11:00", boss: "Kutum",          color: "#7a7aff", icon: "./boss-icons/kutum.png",           active: true },
+    { day: 5, time: "13:00", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+    { day: 5, time: "15:00", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
+    { day: 5, time: "15:00", boss: "Kzarka",         color: "#ff4040", icon: "./boss-icons/kzarka.png",          active: true },
+    { day: 5, time: "18:00", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
+    { day: 5, time: "18:00", boss: "Offin",          color: "#2ecc71", icon: "./boss-icons/offin.png",           active: true },
+    { day: 5, time: "21:15", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
+    { day: 5, time: "21:15", boss: "Kutum",          color: "#7a7aff", icon: "./boss-icons/kutum.png",           active: true },
+    { day: 5, time: "22:15", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
     // Saturday
-    { day: 6, time: "00:15", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
-    { day: 6, time: "00:15", boss: "Kzarka",         color: "#ff4040", icon: "./boss-icons/kzarka.png",          active: true },
-    { day: 6, time: "02:00", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
-    { day: 6, time: "02:00", boss: "Offin",          color: "#2ecc71", icon: "./boss-icons/offin.png",           active: true },
-    { day: 6, time: "12:00", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
-    { day: 6, time: "12:00", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
-    { day: 6, time: "14:00", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
-    { day: 6, time: "16:00", boss: "Black Shadow",   color: "#ffffff", icon: "./boss-icons/black_shadow.png",    active: true },
-    { day: 6, time: "19:00", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
-    { day: 6, time: "19:00", boss: "Karanda",        color: "#3498db", icon: "./boss-icons/karanda.png",         active: true },
+    { day: 6, time: "23:15", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
+    { day: 6, time: "23:15", boss: "Kzarka",         color: "#ff4040", icon: "./boss-icons/kzarka.png",          active: true },
+    { day: 6, time: "01:00", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
+    { day: 6, time: "01:00", boss: "Offin",          color: "#2ecc71", icon: "./boss-icons/offin.png",           active: true },
+    { day: 6, time: "11:00", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
+    { day: 6, time: "11:00", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
+    { day: 6, time: "13:00", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+    { day: 6, time: "15:00", boss: "Black Shadow",   color: "#ffffff", icon: "./boss-icons/black_shadow.png",    active: true },
+    { day: 6, time: "18:00", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
+    { day: 6, time: "18:00", boss: "Karanda",        color: "#3498db", icon: "./boss-icons/karanda.png",         active: true },
     // Sunday
-    { day: 7, time: "00:15", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
-    { day: 7, time: "00:15", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
-    { day: 7, time: "02:00", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
-    { day: 7, time: "02:00", boss: "Kutum",          color: "#7a7aff", icon: "./boss-icons/kutum.png",           active: true },
-    { day: 7, time: "12:00", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
-    { day: 7, time: "12:00", boss: "Kzarka",         color: "#ff4040", icon: "./boss-icons/kzarka.png",          active: true },
-    { day: 7, time: "14:00", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
-    { day: 7, time: "16:00", boss: "Vell",           color: "#2dd4bf", icon: "./boss-icons/vell.png",            active: true },
-    { day: 7, time: "19:15", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
-    { day: 7, time: "22:15", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
-    { day: 7, time: "22:15", boss: "Karanda",        color: "#3498db", icon: "./boss-icons/karanda.png",         active: true },
-    { day: 7, time: "23:15", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+    { day: 7, time: "23:15", boss: "Bulgasal",       color: "#ff4040", icon: "./boss-icons/bulgasal.png",        active: true },
+    { day: 7, time: "23:15", boss: "Nouver",         color: "#ff7f27", icon: "./boss-icons/nouver.png",          active: true },
+    { day: 7, time: "01:00", boss: "Golden Pig King",color: "#f1c40f", icon: "./boss-icons/golden_pig_king.png", active: true },
+    { day: 7, time: "01:00", boss: "Kutum",          color: "#7a7aff", icon: "./boss-icons/kutum.png",           active: true },
+    { day: 7, time: "11:00", boss: "Uturi",          color: "#3bd16f", icon: "./boss-icons/uturi.png",           active: true },
+    { day: 7, time: "11:00", boss: "Kzarka",         color: "#ff4040", icon: "./boss-icons/kzarka.png",          active: true },
+    { day: 7, time: "13:00", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+    { day: 7, time: "15:00", boss: "Vell",           color: "#2dd4bf", icon: "./boss-icons/vell.png",            active: true },
+    { day: 7, time: "18:15", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
+    { day: 7, time: "21:15", boss: "Sangoon",        color: "#2ecc71", icon: "./boss-icons/sangoon.png",         active: true },
+    { day: 7, time: "21:15", boss: "Karanda",        color: "#3498db", icon: "./boss-icons/karanda.png",         active: true },
+    { day: 7, time: "22:15", boss: "Garmoth",        color: "#ff4040", icon: "./boss-icons/garmoth.png",         active: true },
 ];
 
 function resetToDefault() {
@@ -495,7 +596,42 @@ function deleteBoss(bossName) {
     }
 }
 
-// ====================== ADD FUNCTIONS ======================
+// ====================== TABS ======================
+let activeTab = "byDay";
+
+function switchTab(tab) {
+    activeTab = tab;
+    document.querySelectorAll(".tab-btn").forEach((btn, i) => {
+        btn.classList.toggle("active", (i === 0 && tab === "byDay") || (i === 1 && tab === "bulk"));
+    });
+    document.getElementById("tab-byDay").classList.toggle("active", tab === "byDay");
+    document.getElementById("tab-bulk").classList.toggle("active", tab === "bulk");
+}
+
+function bulkSelectAll() {
+    document.querySelectorAll(".bulk-day").forEach(cb => cb.checked = true);
+}
+
+function bulkClearAll() {
+    document.querySelectorAll(".bulk-day").forEach(cb => cb.checked = false);
+}
+
+let bulkTimeCounter = 0;
+
+function addBulkTimeField() {
+    bulkTimeCounter++;
+    const list = document.getElementById("bulkTimeList");
+    const row = document.createElement("div");
+    row.className = "time-row";
+    row.innerHTML = `
+        <input type="time" class="time-input bulk-time-input">
+        <button class="remove-time" onclick="this.parentElement.remove()">🗑️</button>
+    `;
+    list.appendChild(row);
+    row.querySelector("input[type='time']").focus();
+}
+
+
 async function saveAllSpawns() {
     const name = document.getElementById("bossName").value.trim();
     const color = document.getElementById("bossColor").value;
@@ -505,14 +641,7 @@ async function saveAllSpawns() {
         return;
     }
 
-    const dayContainers = document.querySelectorAll(".day-container");
-    if (dayContainers.length === 0) {
-        alert("Please add at least one day");
-        return;
-    }
-
     let iconBase64 = "./boss-icons/gift_box.png";
-
     const file = document.getElementById("bossIcon").files[0];
     if (file) {
         iconBase64 = await new Promise(r => {
@@ -524,25 +653,43 @@ async function saveAllSpawns() {
 
     let addedCount = 0;
 
-    dayContainers.forEach(dayDiv => {
-        const day = parseInt(dayDiv.querySelector(".day-select").value);
-        const timeInputs = dayDiv.querySelectorAll(".time-input");
-
-        timeInputs.forEach(input => {
-            const time = input.value.trim();
-            if (time) {
-                schedule.push({
-                    day: day,
-                    time: time,
-                    boss: name,
-                    color: color,
-                    icon: iconBase64,
-                    active: true
-                });
-                addedCount++;
-            }
+    if (activeTab === "byDay") {
+        const dayContainers = document.querySelectorAll(".day-container");
+        if (dayContainers.length === 0) {
+            alert("Please add at least one day");
+            return;
+        }
+        dayContainers.forEach(dayDiv => {
+            const day = parseInt(dayDiv.querySelector(".day-select").value);
+            dayDiv.querySelectorAll(".time-input").forEach(input => {
+                const time = input.value.trim();
+                if (time) {
+                    schedule.push({ day, time, boss: name, color, icon: iconBase64, active: true });
+                    addedCount++;
+                }
+            });
         });
-    });
+
+    } else {
+        // Bulk tab
+        const selectedDays = [...document.querySelectorAll(".bulk-day:checked")].map(cb => parseInt(cb.value));
+        if (selectedDays.length === 0) {
+            alert("Please select at least one day");
+            return;
+        }
+        const times = [...document.querySelectorAll(".bulk-time-input")]
+            .map(i => i.value.trim()).filter(Boolean);
+        if (times.length === 0) {
+            alert("Please add at least one time");
+            return;
+        }
+        selectedDays.forEach(day => {
+            times.forEach(time => {
+                schedule.push({ day, time, boss: name, color, icon: iconBase64, active: true });
+                addedCount++;
+            });
+        });
+    }
 
     if (addedCount === 0) {
         alert("No valid times were added");
@@ -556,16 +703,34 @@ async function saveAllSpawns() {
 
     alert(`Successfully added ${addedCount} spawns for "${name}"`);
 
-    document.getElementById("dayContainers").innerHTML = "";
-    dayCounter = 0;
-    addDayContainer(1);
+    if (activeTab === "byDay") {
+        document.getElementById("dayContainers").innerHTML = "";
+        dayCounter = 0;
+        addDayContainer(1);
+    } else {
+        bulkClearAll();
+        document.getElementById("bulkTimeList").innerHTML = "";
+        addBulkTimeField();
+    }
 }
+
 
 let dayCounter = 0;
 
-function addDayContainer(defaultDay = 1) {
+function addDayContainer(defaultDay = null) {
     dayCounter++;
     const container = document.getElementById("dayContainers");
+
+    // If no defaultDay specified, pick the day after the last existing day field (wraps 7→1)
+    if (defaultDay === null) {
+        const existing = container.querySelectorAll(".day-select");
+        if (existing.length === 0) {
+            defaultDay = 1;
+        } else {
+            const lastDay = parseInt(existing[existing.length - 1].value, 10);
+            defaultDay = (lastDay % 7) + 1;
+        }
+    }
 
     const dayDiv = document.createElement("div");
     dayDiv.className = "day-container";
@@ -617,6 +782,7 @@ function resetTimerLocation() {
 
 
 addDayContainer(1);
+addBulkTimeField();
 renderTable();
 updateUndoButton();
 
