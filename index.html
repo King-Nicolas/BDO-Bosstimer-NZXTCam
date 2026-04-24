@@ -367,7 +367,9 @@
         let flashIntensity  = parseFloat(localStorage.getItem("flashIntensity")  ?? "0.18");
         let flashCountdown  = parseInt(localStorage.getItem("flashCountdown")    ?? "10", 10);
         let flashColorMode  = localStorage.getItem("flashColorMode") === "true";
+        let bgColor         = localStorage.getItem("timerBgColor") ?? "#0f0f0f";
         document.documentElement.style.setProperty("--flash-intensity", flashIntensity);
+        document.body.style.background = bgColor;
 
         /* ── Color flash state ───────────────────────────────────────────────────────── */
         let colorFlashInterval = null;
@@ -703,6 +705,11 @@
                 <input type="checkbox" id="flashColorToggle" ${flashColorMode ? "checked" : ""}>
                 <label for="flashColorToggle">Flash in boss colors</label>
             </div>
+            <label style="margin-top:10px;">Background color</label>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <input type="color" id="bgColorPicker" value="${bgColor}" style="width:40px; height:28px; padding:2px; border:1px solid #444; border-radius:4px; background:#2a2a2a; cursor:pointer;">
+                <span id="bgColorReset" style="font-size:11px; color:#888; cursor:pointer; text-decoration:underline;">reset</span>
+            </div>
         `;
         wrapper.appendChild(settingsPanel);
 
@@ -724,6 +731,19 @@
             flashColorMode = e.target.checked;
             localStorage.setItem("flashColorMode", flashColorMode);
             if (!flashColorMode) stopColorFlash();
+        });
+
+        settingsPanel.querySelector("#bgColorPicker").addEventListener("input", (e) => {
+            bgColor = e.target.value;
+            document.body.style.background = bgColor;
+            localStorage.setItem("timerBgColor", bgColor);
+        });
+
+        settingsPanel.querySelector("#bgColorReset").addEventListener("click", () => {
+            bgColor = "#0f0f0f";
+            document.body.style.background = bgColor;
+            localStorage.setItem("timerBgColor", bgColor);
+            settingsPanel.querySelector("#bgColorPicker").value = bgColor;
         });
 
         let settingsHideTimer = null;
